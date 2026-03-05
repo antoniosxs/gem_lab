@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProCoach V14 - KSS Bridge & Frame Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ProCoach V14.4 - Responsive Armor</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -16,9 +16,10 @@
             --border: rgba(255, 255, 255, 0.1); --active-vid: #0ea5e9;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; }
         
-        .player-container { position: relative; width: 100vw; height: 100vh; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+        /* FIX CRÍTICO: position fixed e inset 0 evitan el bug del 100vh en tablets y móviles */
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; position: fixed; inset: 0; }
+        .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
         .stage-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background-image: radial-gradient(circle at center, #1e293b 0%, #000 100%); overflow: hidden; position: relative; z-index: 10; }
         .video-stage { position: relative; display: flex; background: #000; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9); transform-origin: center center; transition: transform 0.1s; }
@@ -36,7 +37,7 @@
         .biomechanic-grid { position: absolute; inset: 0; pointer-events: none; z-index: 15; display: none; background-image: linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 50px 50px; }
         .biomechanic-grid::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(0, 230, 118, 0.5); box-shadow: 0 0 10px var(--accent); }
 
-        .webcam-bubble { position: absolute; bottom: 20px; right: 20px; width: 25%; max-width: 140px; aspect-ratio: 1; border: 3px solid var(--accent); border-radius: 50%; z-index: 60; display: none; background: #000; box-shadow: 0 10px 30px rgba(0,230,118,0.3); object-fit: cover; cursor: grab; pointer-events: auto; }
+        .webcam-bubble { position: absolute; width: 120px; height: 120px; border: 3px solid var(--accent); border-radius: 50%; z-index: 60; display: none; background: #000; box-shadow: 0 10px 30px rgba(0,230,118,0.3); object-fit: cover; cursor: grab; pointer-events: auto; }
 
         .ui-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
         .interactive-ui { pointer-events: auto; }
@@ -45,8 +46,7 @@
         
         .ui-element { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        /* DOCK IZQUIERDO */
-        .tool-dock { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; }
+        .tool-dock { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; z-index: 55; }
         .tool-btn { background: transparent; border: none; color: white; width: 40px; height: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
         .tool-btn:hover { background: rgba(255,255,255,0.1); }
         .tool-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
@@ -62,8 +62,7 @@
         .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
         .color-dot.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
 
-        /* DOCK SUPERIOR DERECHO */
-        .top-pill-dock { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; }
+        .top-pill-dock { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; }
         .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px;}
         .pill-btn:hover { background: rgba(255,255,255,0.1); }
         .pill-btn.snapshot { background: #3b82f6; border-color: #60a5fa; }
@@ -72,7 +71,6 @@
         .pill-btn.record.recording { animation: pulseRec 1.5s infinite; }
         @keyframes pulseRec { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
 
-        /* PANELES DESPLEGABLES */
         .popover-panel { position: absolute; top: 60px; right: 15px; width: 260px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .popover-panel.show { display: flex; }
@@ -87,8 +85,7 @@
         input[type="range"] { flex: 1; accent-color: var(--accent); }
         select.styled-select { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px 10px; border-radius: 6px; width: 100%; font-size: 12px; outline: none;}
 
-        /* DOCK INFERIOR */
-        .playback-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px;}
+        .playback-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px; z-index: 55; }
         .playback-controls { display: flex; align-items: center; justify-content: space-between; }
         .sync-selector { display: flex; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid #334155; }
         .sync-selector button { border: none; background: transparent; color: #94a3b8; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -101,7 +98,6 @@
         .zoom-control { display: flex; align-items: center; gap: 8px; margin-left: 10px; border-left: 1px solid #334155; padding-left: 10px;}
         .zoom-slider { width: 80px; accent-color: var(--accent); }
 
-        /* --- GALERÍA Y COMPARADOR DE FRAMES --- */
         .gallery-modal { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; flex-direction: column; align-items: center; padding: 20px; pointer-events: auto; }
         .gallery-modal.show { display: flex; animation: popIn 0.2s; }
         .gallery-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
@@ -111,17 +107,20 @@
         .frame-card.selected { border-color: var(--accent); transform: scale(1.05); box-shadow: 0 0 15px rgba(0,230,118,0.4); }
         .frame-card .check-icon { position: absolute; top: 5px; right: 5px; background: var(--accent); color: #000; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;}
         .frame-card.selected .check-icon { display: flex; }
-        
-        .compare-view { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; max-width: 900px; justify-content: center; flex: 1; align-items: center; }
+        .compare-view { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; max-width: 900px; justify-content: center; flex: 1; align-items: center; overflow-y: auto; padding-bottom: 80px; }
         .compare-img { max-width: 48%; max-height: 40vh; object-fit: contain; border: 2px solid #334155; border-radius: 8px; }
-        
-        .gallery-footer { width: 100%; max-width: 900px; display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .gallery-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: rgba(0,0,0,0.9); width: 100%; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
         .btn-kss { background: linear-gradient(135deg, #0ea5e9, #8b5cf6); border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 14px;}
-        .btn-kss:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
         
-        /* Flash de captura */
         .flash-overlay { position: absolute; inset: 0; background: white; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
         .flash-overlay.flash { opacity: 0.8; }
+        
+        @media (max-width: 768px) {
+            .zoom-control { display: none; } /* En móvil se puede hacer pinch-to-zoom en el container padre si se desea, o lo quitamos de la barra estrecha */
+            .top-pill-dock { right: 10px; top: 10px; }
+            .tool-dock { left: 10px; }
+            .playback-dock { width: 95%; padding: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -139,7 +138,9 @@
         </div>
     </div>
     <canvas id="recordCanvas"></canvas>
-    <canvas id="compareCanvas"></canvas> <div id="uiOverlay" class="ui-layer">
+    <canvas id="compareCanvas"></canvas>
+
+    <div id="uiOverlay" class="ui-layer">
         
         <div class="ui-element tool-dock interactive-ui">
             <button class="tool-btn active" id="btn-none" onclick="setTool('none')" title="Gestos">🖱</button>
@@ -258,16 +259,9 @@
             <h2 style="color: white; margin: 0; font-size: 20px;">📸 Laboratorio de Frames</h2>
             <button onclick="closeGallery()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">✕</button>
         </div>
-        
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 10px; width: 100%; max-width: 900px;">Selecciona hasta 2 frames para compararlos lado a lado.</p>
-        
-        <div class="gallery-grid" id="galleryGrid">
-            </div>
-
-        <div class="compare-view" id="compareView">
-            <p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>
-        </div>
-
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <div class="compare-view" id="compareView"></div>
         <div class="gallery-footer">
             <button class="pill-btn" onclick="downloadComparison()" id="btnDownloadComp" style="display: none; background: #334155; border: none;">⬇️ Descargar Juntos</button>
             <button class="btn-kss" onclick="exportToKSS()">🚀 Exportar a KSS Coach</button>
@@ -278,6 +272,7 @@
 <script>
     function togglePanel(panelId) { document.querySelectorAll('.popover-panel').forEach(p => { if(p.id !== panelId) p.classList.remove('show'); }); if(panelId) { const panel = document.getElementById(panelId); if(panel) panel.classList.toggle('show'); } }
     document.getElementById('masterCanvas').addEventListener('mousedown', () => togglePanel(null));
+    document.getElementById('masterCanvas').addEventListener('touchstart', () => togglePanel(null), {passive:true});
 
     const v1 = document.getElementById('v1'), v2 = document.getElementById('v2');
     const stage = document.getElementById('videoStage');
@@ -290,7 +285,7 @@
     document.getElementById('up1').onchange = e => { if(e.target.files[0]) { v1.src = URL.createObjectURL(e.target.files[0]); clearDrawings(); togglePanel(null); } };
     document.getElementById('up2').onchange = e => { if(e.target.files[0]) { v2.src = URL.createObjectURL(e.target.files[0]); togglePanel(null); } };
 
-    // --- IA MEDIAPIPE ---
+    // --- MediaPipe IA ---
     let aiActive = false, poseData = null, poseModel = null, aiProcessing = false;
     function initMediaPipe() { if(poseModel) return; poseModel = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`}); poseModel.setOptions({ modelComplexity: 1, smoothLandmarks: true, enableSegmentation: false, smoothSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }); poseModel.onResults(results => { poseData = results.poseLandmarks; aiProcessing = false; }); }
     function toggleAI() { aiActive = !aiActive; const btn = document.getElementById('btn-ai'); if(aiActive) { btn.classList.add('active'); if(!poseModel) initMediaPipe(); } else { btn.classList.remove('active'); poseData = null; } }
@@ -303,160 +298,120 @@
     function toggleGrid(chk) { grid.style.display = chk.checked ? 'block' : 'none'; }
 
     let outWidth = 1280, outHeight = 720;
-    function resizeCanvas() { const wrapper = document.getElementById('stageWrapper'); const format = document.getElementById('outFormat').value; const wWidth = wrapper.clientWidth; const wHeight = wrapper.clientHeight; const targetRatio = (format === 'vertical') ? (9/16) : (16/9); const currentRatio = wWidth / wHeight; if (currentRatio > targetRatio) { stage.style.height = wHeight + 'px'; stage.style.width = (wHeight * targetRatio) + 'px'; } else { stage.style.width = wWidth + 'px'; stage.style.height = (wWidth / targetRatio) + 'px'; } canvas.width = stage.clientWidth; canvas.height = stage.clientHeight; document.getElementById('aiCanvas').width = canvas.width; document.getElementById('aiCanvas').height = canvas.height; if(format === 'vertical') { outWidth = 720; outHeight = 1280; } else { outWidth = 1280; outHeight = 720; } recCanvas.width = outWidth; recCanvas.height = outHeight; }
+    
+    function resizeCanvas() { 
+        const wrapper = document.getElementById('stageWrapper'); const format = document.getElementById('outFormat').value; 
+        const wWidth = wrapper.clientWidth; const wHeight = wrapper.clientHeight; 
+        const targetRatio = (format === 'vertical') ? (9/16) : (16/9); const currentRatio = wWidth / wHeight; 
+        
+        if (currentRatio > targetRatio) { stage.style.height = wHeight + 'px'; stage.style.width = (wHeight * targetRatio) + 'px'; } 
+        else { stage.style.width = wWidth + 'px'; stage.style.height = (wWidth / targetRatio) + 'px'; } 
+        
+        canvas.width = stage.clientWidth; canvas.height = stage.clientHeight; 
+        document.getElementById('aiCanvas').width = canvas.width; document.getElementById('aiCanvas').height = canvas.height; 
+        
+        if(format === 'vertical') { outWidth = 720; outHeight = 1280; } else { outWidth = 1280; outHeight = 720; } 
+        recCanvas.width = outWidth; recCanvas.height = outHeight; 
+        
+        webcam.style.left = ''; webcam.style.top = ''; webcam.style.right = '20px'; webcam.style.bottom = '20px';
+    }
     window.addEventListener('resize', resizeCanvas);
 
     let currentMode = 'single';
     function setLayout(mode, btn) { currentMode = mode; stage.className = `video-stage mode-${mode}`; document.querySelectorAll('#panel-layout .segmented-control button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); resizeCanvas(); }
 
-    // --- NUEVO: SISTEMA DE GALERÍA Y COMPARACIÓN DE FRAMES ---
-    let capturedFrames = []; // Almacena los DataURLs de los snaps
+    let webcamStream = null;
+    async function toggleCam() { 
+        const layout = document.getElementById('camLayout').value; 
+        webcam.style.display = (layout !== 'hidden') ? 'block' : 'none'; 
+        
+        if (layout !== 'hidden' && !webcamStream) {
+            try { webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); webcam.srcObject = webcamStream; await webcam.play().catch(e=>console.warn(e)); } 
+            catch (err) { console.error("Error activando cámara:", err); }
+        }
+    }
 
+    function drawSmartBubble(ctx, camVid, x, y, radius) {
+        if(!camVid || camVid.videoWidth === 0) return;
+        ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+        const camRatio = camVid.videoWidth / camVid.videoHeight; let sW = camVid.videoWidth, sH = camVid.videoHeight, sX = 0, sY = 0;
+        if (camRatio > 1) { sW = sH; sX = (camVid.videoWidth - sW) / 2; } else { sH = sW; sY = (camVid.videoHeight - sH) / 2; }
+        try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), Math.floor(x - radius), Math.floor(y - radius), radius * 2, radius * 2); } catch(e){}
+        ctx.restore(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.lineWidth = 6; ctx.strokeStyle = '#00e676'; ctx.stroke();
+    }
+
+    let capturedFrames = [];
     function takeSnapshot() {
-        // Aprovechamos la lógica de renderizado limpio del recCtx
         recCtx.fillStyle = '#0f172a'; recCtx.fillRect(0, 0, outWidth, outHeight);
-        let vidW = outWidth, vidH = outHeight, vidX = 0, vidY = 0;
-        if (currentMode === 'single') drawContain(v1, recCtx, vidX, vidY, vidW, vidH);
-        else if (currentMode === 'split') { drawContain(v1, recCtx, vidX, vidY, vidW/2, vidH); drawContain(v2, recCtx, vidX + vidW/2, vidY, vidW/2, vidH); } 
-        else if (currentMode === 'ghost') { drawContain(v1, recCtx, vidX, vidY, vidW, vidH); recCtx.globalCompositeOperation = "screen"; recCtx.globalAlpha = 0.5; drawContain(v2, recCtx, vidX, vidY, vidW, vidH); recCtx.globalCompositeOperation = "source-over"; recCtx.globalAlpha = 1.0; }
-        recCtx.drawImage(canvas, vidX, vidY, vidW, vidH);
+        const camLayout = document.getElementById('camLayout').value; const format = document.getElementById('outFormat').value;
+        let vW = outWidth, vH = outHeight, vX = 0, vY = 0;
+        
+        if (camLayout === 'split' && webcamStream && webcam.readyState >= 2) { 
+            if (format === 'vertical') { vH = outHeight / 2; drawContain(webcam, recCtx, 0, outHeight/2, outWidth, outHeight/2); } 
+            else { vW = outWidth / 2; drawContain(webcam, recCtx, outWidth/2, 0, outWidth/2, outHeight); } 
+        }
+        
+        if (currentMode === 'single') drawContain(v1, recCtx, vX, vY, vW, vH);
+        else if (currentMode === 'split') { drawContain(v1, recCtx, vX, vY, vW/2, vH); drawContain(v2, recCtx, vX + vW/2, vY, vW/2, vH); } 
+        else if (currentMode === 'ghost') { drawContain(v1, recCtx, vX, vY, vW, vH); recCtx.globalCompositeOperation = "screen"; recCtx.globalAlpha = 0.5; drawContain(v2, recCtx, vX, vY, vW, vH); recCtx.globalCompositeOperation = "source-over"; recCtx.globalAlpha = 1.0; }
+        
+        recCtx.drawImage(canvas, vX, vY, vW, vH);
+        
+        if (camLayout === 'bubble' && webcamStream && webcam.readyState >= 2) { 
+            const sRect = stage.getBoundingClientRect(); const cRect = webcam.getBoundingClientRect(); 
+            const pX = (cRect.left - sRect.left) / stage.clientWidth; const pY = (cRect.top - sRect.top) / stage.clientHeight; 
+            const bR = (cRect.width / stage.clientWidth) * outWidth / 2; const bX = (pX * outWidth) + bR; const bY = (pY * outHeight) + bR; 
+            drawSmartBubble(recCtx, webcam, bX, bY, bR);
+        }
+
         recCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; recCtx.font = "bold 24px Arial"; recCtx.fillText("KSS Coach Pro", 20, outHeight - 30);
         
-        // Guardar el frame en memoria
         const dataURL = recCanvas.toDataURL('image/png');
         capturedFrames.push({ id: Date.now(), src: dataURL, selected: false });
-        
-        // Actualizar contador visual
         document.getElementById('snapCount').innerText = capturedFrames.length;
 
-        // Efecto Flash Visual
         const flash = document.getElementById('flashOverlay');
-        flash.classList.add('flash');
-        setTimeout(() => flash.classList.remove('flash'), 100);
+        flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 100);
     }
 
     function openGallery() {
-        const modal = document.getElementById('galleryModal');
-        const grid = document.getElementById('galleryGrid');
-        grid.innerHTML = '';
-        
-        if(capturedFrames.length === 0) {
-            grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún. Usa el botón "📸 Snap".</p>';
-        }
-
-        // Renderizar miniaturas
+        const modal = document.getElementById('galleryModal'); const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
+        if(capturedFrames.length === 0) { grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún.</p>'; }
         capturedFrames.forEach((frame, index) => {
-            const div = document.createElement('div');
-            div.className = `frame-card ${frame.selected ? 'selected' : ''}`;
+            const div = document.createElement('div'); div.className = `frame-card ${frame.selected ? 'selected' : ''}`;
             div.onclick = () => toggleSelectFrame(index);
-            div.innerHTML = `
-                <img src="${frame.src}" alt="Frame">
-                <div class="check-icon">✓</div>
-            `;
+            div.innerHTML = `<img src="${frame.src}" alt="Frame"><div class="check-icon">✓</div>`;
             grid.appendChild(div);
         });
-
-        renderCompareView();
-        modal.classList.add('show');
+        renderCompareView(); modal.classList.add('show');
     }
 
-    function closeGallery() {
-        document.getElementById('galleryModal').classList.remove('show');
-    }
-
-    function toggleSelectFrame(index) {
-        const frame = capturedFrames[index];
-        const selectedCount = capturedFrames.filter(f => f.selected).length;
-        
-        if(!frame.selected && selectedCount >= 2) {
-            alert("Solo puedes seleccionar hasta 2 frames para comparar.");
-            return;
-        }
-        
-        frame.selected = !frame.selected;
-        openGallery(); // Re-render rápido
-    }
-
+    function closeGallery() { document.getElementById('galleryModal').classList.remove('show'); }
+    function toggleSelectFrame(index) { const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } frame.selected = !frame.selected; openGallery(); }
+    
     function renderCompareView() {
-        const view = document.getElementById('compareView');
-        const btnDownload = document.getElementById('btnDownloadComp');
-        const selected = capturedFrames.filter(f => f.selected);
-        
-        view.innerHTML = '';
-        
-        if (selected.length === 0) {
-            view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>';
-            btnDownload.style.display = 'none';
-        } else {
-            selected.forEach(frame => {
-                const img = document.createElement('img');
-                img.src = frame.src;
-                img.className = 'compare-img';
-                view.appendChild(img);
-            });
-            btnDownload.style.display = (selected.length === 2) ? 'block' : 'none';
-        }
+        const view = document.getElementById('compareView'); const btnDownload = document.getElementById('btnDownloadComp'); const selected = capturedFrames.filter(f => f.selected); view.innerHTML = '';
+        if (selected.length === 0) { view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; btnDownload.style.display = 'none'; } 
+        else { selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; }
     }
 
     function downloadComparison() {
-        const selected = capturedFrames.filter(f => f.selected);
-        if(selected.length !== 2) return;
-
-        // Crear una imagen combinada (side by side)
-        const compCanvas = document.getElementById('compareCanvas');
-        const compCtx = compCanvas.getContext('2d');
-        
-        // Asumimos que ambos tienen el mismo tamaño (outWidth x outHeight)
-        compCanvas.width = outWidth * 2;
-        compCanvas.height = outHeight;
-        
-        const img1 = new Image(); const img2 = new Image();
-        img1.src = selected[0].src; img2.src = selected[1].src;
-        
-        img1.onload = () => {
-            compCtx.drawImage(img1, 0, 0);
-            img2.onload = () => {
-                compCtx.drawImage(img2, outWidth, 0);
-                // Descargar
-                const a = document.createElement('a');
-                a.href = compCanvas.toDataURL('image/png');
-                a.download = `KSS-Comparacion-${Date.now()}.png`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            };
-        };
+        const selected = capturedFrames.filter(f => f.selected); if(selected.length !== 2) return;
+        const compCanvas = document.getElementById('compareCanvas'); const compCtx = compCanvas.getContext('2d');
+        compCanvas.width = outWidth * 2; compCanvas.height = outHeight;
+        const img1 = new Image(); const img2 = new Image(); img1.src = selected[0].src; img2.src = selected[1].src;
+        img1.onload = () => { compCtx.drawImage(img1, 0, 0); img2.onload = () => { compCtx.drawImage(img2, outWidth, 0); const a = document.createElement('a'); a.href = compCanvas.toDataURL('image/png'); a.download = `KSS-Comparacion-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }; };
     }
 
-    // --- LA MAGIA DE INTEGRACIÓN (El Puente a tu index.html) ---
     function exportToKSS() {
-        // Tomamos los seleccionados, si no hay ninguno, exportamos el último tomado
-        const selected = capturedFrames.filter(f => f.selected);
-        const framesToExport = selected.length > 0 ? selected : [capturedFrames[capturedFrames.length - 1]];
-        
-        if(!framesToExport[0]) {
-            alert("Captura al menos un frame primero usando '📸 Snap'");
-            return;
-        }
-
-        // Empaquetamos las URLs en base64
+        const selected = capturedFrames.filter(f => f.selected); const framesToExport = selected.length > 0 ? selected : [capturedFrames[capturedFrames.length - 1]];
+        if(!framesToExport[0]) { alert("Captura al menos un frame primero usando '📸 Snap'"); return; }
         const exportData = framesToExport.map(f => f.src);
-
-        // DISPARAMOS UN EVENTO GLOBAL
-        // Tu archivo index.html principal (el padre) solo tiene que escuchar:
-        // window.addEventListener('kss-frames-exported', (e) => { const images = e.detail.frames; ... });
         const kssEvent = new CustomEvent('kss-frames-exported', { detail: { frames: exportData } });
-        
-        // Lo enviamos a esta ventana y a la ventana padre (por si esto corre en un iframe)
-        window.dispatchEvent(kssEvent);
-        if(window.parent !== window) {
-            window.parent.dispatchEvent(kssEvent);
-        }
-
-        alert(`¡Listo! ${exportData.length} frame(s) enviados al sistema KSS Coach.\n\n(Asegúrate de configurar el eventListener en tu app principal).`);
-        closeGallery();
+        window.dispatchEvent(kssEvent); if(window.parent !== window) { window.parent.dispatchEvent(kssEvent); }
+        alert(`¡Listo! ${exportData.length} frame(s) exportados.`); closeGallery();
     }
 
-
-    // BURBUJA ARRASTRABLE
     let isDraggingCam = false, camOffsetX = 0, camOffsetY = 0;
     function startDragCam(e) { isDraggingCam = true; const r = webcam.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; camOffsetX = cx - r.left; camOffsetY = cy - r.top; }
     function moveDragCam(e) { if(isDraggingCam) { if(e.touches) e.preventDefault(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; const sRect = stage.getBoundingClientRect(); let nL = cx - sRect.left - camOffsetX; let nT = cy - sRect.top - camOffsetY; nL = Math.max(0, Math.min(nL, stage.clientWidth - webcam.clientWidth)); nT = Math.max(0, Math.min(nT, stage.clientHeight - webcam.clientHeight)); webcam.style.left = nL + 'px'; webcam.style.top = nT + 'px'; webcam.style.right = 'auto'; webcam.style.bottom = 'auto'; } }
@@ -464,10 +419,27 @@
     webcam.addEventListener('mousedown', startDragCam); window.addEventListener('mousemove', moveDragCam); window.addEventListener('mouseup', endDragCam);
     webcam.addEventListener('touchstart', startDragCam, {passive:false}); window.addEventListener('touchmove', moveDragCam, {passive:false}); window.addEventListener('touchend', endDragCam);
 
-    // GRABACIÓN
-    let isRecording = false, mediaRecorder, recordedChunks = [], webcamStream = null;
-    function toggleCam() { webcam.style.display = (document.getElementById('camLayout').value === 'bubble') ? 'block' : 'none'; }
-    async function executeRecording() { const btnMain = document.getElementById('btnRecord'); const btnStart = document.getElementById('btnStartRec'); if (!isRecording) { try { if(!webcamStream) { webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: {ideal: 1280}, height: {ideal: 720} } }); webcam.srcObject = webcamStream; } toggleCam(); resizeCanvas(); const canvasStream = recCanvas.captureStream(30); const combinedStream = new MediaStream([...canvasStream.getTracks(), ...webcamStream.getAudioTracks()]); let opts = { mimeType: 'video/webm;codecs=vp8,opus' }; if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/mp4' }; mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-StudioCut-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; mediaRecorder.start(); isRecording = true; btnStart.innerText = "🛑 Detener y Guardar"; btnMain.classList.add('recording'); btnMain.innerText = "🛑 Grabando"; togglePanel(null); } catch (err) { alert("Permite acceso a cámara/micro bro."); } } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } }
+    let isRecording = false, mediaRecorder, recordedChunks = [];
+    async function executeRecording() { 
+        const btnMain = document.getElementById('btnRecord'); const btnStart = document.getElementById('btnStartRec'); 
+        if (!isRecording) { 
+            try { 
+                await toggleCam(); resizeCanvas(); 
+                const canvasStream = recCanvas.captureStream(30); 
+                const streamTracks = [...canvasStream.getTracks()];
+                if(webcamStream) streamTracks.push(...webcamStream.getAudioTracks());
+                
+                const combinedStream = new MediaStream(streamTracks); 
+                let opts = { mimeType: 'video/webm;codecs=vp8,opus' }; 
+                if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/mp4' }; 
+                
+                mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; 
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); }; 
+                mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-StudioCut-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; 
+                mediaRecorder.start(); isRecording = true; btnStart.innerText = "🛑 Detener y Guardar"; btnMain.classList.add('recording'); btnMain.innerText = "🛑 Grabando"; togglePanel(null); 
+            } catch (err) { alert("Error al grabar bro."); } 
+        } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
+    }
 
     let targetMode = 'sync';
     function setTarget(mode) { targetMode = mode; document.querySelectorAll('.sync-selector button').forEach(b => b.classList.remove('active')); document.getElementById(`ctrl-${mode}`).classList.add('active'); document.documentElement.style.setProperty('--active-vid', mode === 'sync' ? '#0ea5e9' : (mode === 'v1' ? '#10b981' : '#f59e0b')); updateSliderUI(); }
@@ -480,7 +452,6 @@
     function updateSliderUI() { const refVid = (targetMode === 'v2') ? v2 : v1; if(refVid.duration) { timeSlider.value = (refVid.currentTime / refVid.duration) * 100; document.getElementById('timeDisplay').innerText = new Date(refVid.currentTime*1000).toISOString().substr(14,8); } }
     v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
 
-    // HERRAMIENTAS VIVAS
     let currentTool = 'none', drawings = [], currentPath = null, isDrawing = false, startX=0, startY=0;
     function setTool(tool) { currentTool = tool; document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"]):not(.ai-btn)').forEach(b => { b.classList.remove('active'); b.style.boxShadow='none';}); const btn=document.getElementById(`btn-${tool}`); btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; togglePanel(null); }
     function clearDrawings() { drawings = []; currentPath = null; }
@@ -521,17 +492,6 @@
         }
         if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
 
-        if (isRecording) {
-            recCtx.fillStyle = '#0f172a'; recCtx.fillRect(0, 0, outWidth, outHeight);
-            const camLayout = document.getElementById('camLayout').value; const format = document.getElementById('outFormat').value; let vidW = outWidth, vidH = outHeight, vidX = 0, vidY = 0;
-            if (camLayout === 'split' && webcamStream) { if (format === 'vertical') { vidH = outHeight / 2; drawContain(webcam, recCtx, 0, outHeight/2, outWidth, outHeight/2); } else { vidW = outWidth / 2; vidX = outWidth / 2; drawContain(webcam, recCtx, 0, 0, outWidth/2, outHeight); } }
-            if (currentMode === 'single') drawContain(v1, recCtx, vidX, vidY, vidW, vidH);
-            else if (currentMode === 'split') { drawContain(v1, recCtx, vidX, vidY, vidW/2, vidH); drawContain(v2, recCtx, vidX + vidW/2, vidY, vidW/2, vidH); } 
-            else if (currentMode === 'ghost') { drawContain(v1, recCtx, vidX, vidY, vidW, vidH); recCtx.globalCompositeOperation = "screen"; recCtx.globalAlpha = 0.5; drawContain(v2, recCtx, vidX, vidY, vidW, vidH); recCtx.globalCompositeOperation = "source-over"; recCtx.globalAlpha = 1.0; }
-            recCtx.drawImage(canvas, vidX, vidY, vidW, vidH);
-            if (camLayout === 'bubble' && webcamStream) { const sRect = stage.getBoundingClientRect(); const cRect = webcam.getBoundingClientRect(); const pX = (cRect.left - sRect.left) / stage.clientWidth; const pY = (cRect.top - sRect.top) / stage.clientHeight; const bR = (cRect.width / stage.clientWidth) * outWidth / 2; const bX = (pX * outWidth) + bR; const bY = (pY * outHeight) + bR; recCtx.save(); recCtx.beginPath(); recCtx.arc(bX, bY, bR, 0, Math.PI * 2); recCtx.closePath(); recCtx.clip(); recCtx.drawImage(webcam, bX - bR, bY - bR, bR * 2, bR * 2); recCtx.restore(); recCtx.beginPath(); recCtx.arc(bX, bY, bR, 0, Math.PI*2); recCtx.lineWidth = 6; recCtx.strokeStyle = '#00e676'; recCtx.stroke(); }
-            recCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; recCtx.font = "bold 24px Arial"; recCtx.fillText("KSS Coach Pro", 20, outHeight - 30);
-        }
         requestAnimationFrame(renderLoop);
     }
 
@@ -560,10 +520,23 @@
     canvas.addEventListener('touchstart', e => { if(currentTool==='none'&&e.touches.length===1){tX=e.touches[0].clientX; iT=(targetMode==='v2')?v2.currentTime:v1.currentTime; isGest=false;} }, {passive:false});
     canvas.addEventListener('touchmove', e => { if(currentTool==='none'&&e.touches.length===1){ const dx=e.touches[0].clientX-tX; if(Math.abs(dx)>15){ isGest=true; e.preventDefault(); const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); getActiveVids().forEach(v => v.currentTime = newT); } } }, {passive:false});
 
+    // FIX CRÍTICO: El sensor de reactivación de UI ahora escucha todo el documento y clics
     const ui = document.getElementById('uiOverlay'); let uiTimeout;
-    function resetUI() { ui.classList.remove('hidden-ui'); clearTimeout(uiTimeout); uiTimeout = setTimeout(() => { if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show')) ui.classList.add('hidden-ui'); }, 3500); }
-    ui.addEventListener('mousemove', resetUI); ui.addEventListener('touchstart', resetUI, {passive: true});
+    const wakeUpUI = () => {
+        ui.classList.remove('hidden-ui');
+        clearTimeout(uiTimeout);
+        uiTimeout = setTimeout(() => { 
+            if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show')) {
+                ui.classList.add('hidden-ui'); 
+            }
+        }, 3500);
+    };
     
+    document.addEventListener('mousemove', wakeUpUI);
+    document.addEventListener('touchstart', wakeUpUI, {passive: true});
+    document.addEventListener('click', wakeUpUI); // Fuerza el encendido al tocar cualquier lado
+    
+    toggleCam();
     resizeCanvas(); renderLoop();
 </script>
 </body>
