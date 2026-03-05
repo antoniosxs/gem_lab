@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ProCoach V14.4 - Responsive Armor</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <title>ProCoach V14.5 - Light & Clean</title>
 
     <style>
         :root {
@@ -17,7 +13,6 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        /* FIX CRÍTICO: position fixed e inset 0 evitan el bug del 100vh en tablets y móviles */
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; position: fixed; inset: 0; }
         .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
@@ -32,7 +27,7 @@
         .mode-single .vid-wrapper#wrap2 { display: none; }
 
         canvas#masterCanvas { position: absolute; inset: 0; z-index: 20; pointer-events: auto; }
-        canvas#recordCanvas, canvas#aiCanvas, canvas#compareCanvas { display: none; } 
+        canvas#recordCanvas, canvas#compareCanvas { display: none; } 
 
         .biomechanic-grid { position: absolute; inset: 0; pointer-events: none; z-index: 15; display: none; background-image: linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 50px 50px; }
         .biomechanic-grid::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(0, 230, 118, 0.5); box-shadow: 0 0 10px var(--accent); }
@@ -52,12 +47,6 @@
         .tool-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
         .dock-divider { width: 80%; height: 1px; background: var(--border); margin: 2px auto; }
         
-        .ai-btn { border: 1px solid #c084fc; color: #e879f9; font-weight: bold; background: rgba(192, 132, 252, 0.1); font-size: 14px; }
-        .ai-btn.active { background: #c084fc; color: #000; box-shadow: 0 0 15px #c084fc; border-color: #c084fc; }
-        .ai-loader { position: absolute; bottom: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #e879f9; animation: pulseAI 1s infinite; display: none; }
-        .ai-btn.active .ai-loader { display: block; }
-        @keyframes pulseAI { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
-
         .quick-colors { display: flex; flex-direction: column; gap: 5px; align-items: center; margin: 5px 0; }
         .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
         .color-dot.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
@@ -86,17 +75,17 @@
         select.styled-select { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px 10px; border-radius: 6px; width: 100%; font-size: 12px; outline: none;}
 
         .playback-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px; z-index: 55; }
-        .playback-controls { display: flex; align-items: center; justify-content: space-between; }
+        .playback-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .sync-selector { display: flex; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid #334155; }
         .sync-selector button { border: none; background: transparent; color: #94a3b8; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .sync-selector button.active { background: var(--active-vid); color: white; }
         .play-btn { background: white; color: black; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .step-btn { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; }
-        .timeline-row { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px;}
-        .timeline-slider { flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer; }
+        .timeline-row { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; flex-wrap: nowrap; }
+        .timeline-slider { flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer; min-width: 50px; }
         .time-display { font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px; color: var(--accent); font-weight: bold;}
-        .zoom-control { display: flex; align-items: center; gap: 8px; margin-left: 10px; border-left: 1px solid #334155; padding-left: 10px;}
-        .zoom-slider { width: 80px; accent-color: var(--accent); }
+        .zoom-control { display: flex; align-items: center; gap: 8px; margin-left: 5px; border-left: 1px solid #334155; padding-left: 10px; }
+        .zoom-slider { width: 60px; accent-color: var(--accent); }
 
         .gallery-modal { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; flex-direction: column; align-items: center; padding: 20px; pointer-events: auto; }
         .gallery-modal.show { display: flex; animation: popIn 0.2s; }
@@ -110,16 +99,18 @@
         .compare-view { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; max-width: 900px; justify-content: center; flex: 1; align-items: center; overflow-y: auto; padding-bottom: 80px; }
         .compare-img { max-width: 48%; max-height: 40vh; object-fit: contain; border: 2px solid #334155; border-radius: 8px; }
         .gallery-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: rgba(0,0,0,0.9); width: 100%; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+        
         .btn-kss { background: linear-gradient(135deg, #0ea5e9, #8b5cf6); border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 14px;}
+        .btn-delete { background: #ef4444; border: 1px solid #f87171; color: white; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; font-size: 14px; }
         
         .flash-overlay { position: absolute; inset: 0; background: white; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
         .flash-overlay.flash { opacity: 0.8; }
         
         @media (max-width: 768px) {
-            .zoom-control { display: none; } /* En móvil se puede hacer pinch-to-zoom en el container padre si se desea, o lo quitamos de la barra estrecha */
             .top-pill-dock { right: 10px; top: 10px; }
             .tool-dock { left: 10px; }
             .playback-dock { width: 95%; padding: 10px; }
+            /* Zoom ahora se acomoda en lugar de desaparecer */
         }
     </style>
 </head>
@@ -133,7 +124,6 @@
             <div class="vid-wrapper" id="wrap1"><video id="v1" playsinline crossorigin="anonymous" src="https://www.w3schools.com/html/mov_bbb.mp4"></video></div>
             <div class="vid-wrapper" id="wrap2"><video id="v2" playsinline crossorigin="anonymous"></video></div>
             <canvas id="masterCanvas"></canvas>
-            <canvas id="aiCanvas" width="1280" height="720"></canvas>
             <video id="webcamVideo" class="webcam-bubble" autoplay muted playsinline></video>
         </div>
     </div>
@@ -151,8 +141,6 @@
             <button class="tool-btn" id="btn-joint" onclick="setTool('joint')" title="Ángulo">📐</button>
             <button class="tool-btn" id="btn-timer" onclick="setTool('timer')" title="Cronómetro" style="color: #facc15;">⏱️</button>
             <button class="tool-btn" id="btn-mag" onclick="setTool('mag')" title="Lupa Dinámica" style="color: #60a5fa;">🔎</button>
-            <div class="dock-divider"></div>
-            <button class="tool-btn ai-btn" id="btn-ai" onclick="toggleAI()" title="Rastreo IA">IA<div class="ai-loader"></div></button>
             <div class="dock-divider"></div>
             <div class="quick-colors">
                 <button class="color-dot active" style="background:#00e676;" onclick="setQuickColor('#00e676', this)"></button>
@@ -262,9 +250,11 @@
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 10px; width: 100%; max-width: 900px;">Selecciona hasta 2 frames para compararlos lado a lado.</p>
         <div class="gallery-grid" id="galleryGrid"></div>
         <div class="compare-view" id="compareView"></div>
+        
         <div class="gallery-footer">
+            <button class="btn-delete" onclick="deleteSelectedFrames()" id="btnDeleteComp" style="display: none;">🗑️ Eliminar</button>
             <button class="pill-btn" onclick="downloadComparison()" id="btnDownloadComp" style="display: none; background: #334155; border: none;">⬇️ Descargar Juntos</button>
-            <button class="btn-kss" onclick="exportToKSS()">🚀 Exportar a KSS Coach</button>
+            <button class="btn-kss" onclick="exportToKSS()">🚀 Exportar a KSS</button>
         </div>
     </div>
 </div>
@@ -285,14 +275,8 @@
     document.getElementById('up1').onchange = e => { if(e.target.files[0]) { v1.src = URL.createObjectURL(e.target.files[0]); clearDrawings(); togglePanel(null); } };
     document.getElementById('up2').onchange = e => { if(e.target.files[0]) { v2.src = URL.createObjectURL(e.target.files[0]); togglePanel(null); } };
 
-    // --- MediaPipe IA ---
-    let aiActive = false, poseData = null, poseModel = null, aiProcessing = false;
-    function initMediaPipe() { if(poseModel) return; poseModel = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`}); poseModel.setOptions({ modelComplexity: 1, smoothLandmarks: true, enableSegmentation: false, smoothSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }); poseModel.onResults(results => { poseData = results.poseLandmarks; aiProcessing = false; }); }
-    function toggleAI() { aiActive = !aiActive; const btn = document.getElementById('btn-ai'); if(aiActive) { btn.classList.add('active'); if(!poseModel) initMediaPipe(); } else { btn.classList.remove('active'); poseData = null; } }
-    function drawSkeleton(ctx, landmarks, w, h) { if(!landmarks) return; ctx.save(); ctx.lineWidth = drawSize; ctx.strokeStyle = drawColor; ctx.fillStyle = '#ffffff'; const connections = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [27, 29], [27, 31], [24, 26], [26, 28], [28, 30], [28, 32]]; ctx.shadowColor = drawColor; ctx.shadowBlur = 10; ctx.beginPath(); connections.forEach(([i, j]) => { if(landmarks[i] && landmarks[j] && landmarks[i].visibility > 0.5 && landmarks[j].visibility > 0.5) { ctx.moveTo(landmarks[i].x * w, landmarks[i].y * h); ctx.lineTo(landmarks[j].x * w, landmarks[j].y * h); } }); ctx.stroke(); ctx.shadowBlur = 0; landmarks.forEach((lm, index) => { if(index > 10 && lm.visibility > 0.5) { ctx.beginPath(); ctx.arc(lm.x * w, lm.y * h, drawSize * 1.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); } }); ctx.restore(); }
-
     let drawColor = '#00e676'; let drawSize = 4; let currentZoom = 1;
-    function setQuickColor(hex, btn) { drawColor = hex; document.documentElement.style.setProperty('--accent', hex); document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tool-btn.active:not(.ai-btn)').forEach(b => b.style.boxShadow = `0 0 15px ${hex}`); }
+    function setQuickColor(hex, btn) { drawColor = hex; document.documentElement.style.setProperty('--accent', hex); document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tool-btn.active').forEach(b => b.style.boxShadow = `0 0 15px ${hex}`); }
     function updateThickness() { drawSize = parseInt(document.getElementById('lineWidth').value); }
     function updateZoom() { currentZoom = document.getElementById('zoomSlider').value; stage.style.transform = `scale(${currentZoom})`; }
     function toggleGrid(chk) { grid.style.display = chk.checked ? 'block' : 'none'; }
@@ -308,7 +292,6 @@
         else { stage.style.width = wWidth + 'px'; stage.style.height = (wWidth / targetRatio) + 'px'; } 
         
         canvas.width = stage.clientWidth; canvas.height = stage.clientHeight; 
-        document.getElementById('aiCanvas').width = canvas.width; document.getElementById('aiCanvas').height = canvas.height; 
         
         if(format === 'vertical') { outWidth = 720; outHeight = 1280; } else { outWidth = 1280; outHeight = 720; } 
         recCanvas.width = outWidth; recCanvas.height = outHeight; 
@@ -387,12 +370,38 @@
     }
 
     function closeGallery() { document.getElementById('galleryModal').classList.remove('show'); }
-    function toggleSelectFrame(index) { const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } frame.selected = !frame.selected; openGallery(); }
     
+    function toggleSelectFrame(index) { 
+        const frame = capturedFrames[index]; 
+        const selectedCount = capturedFrames.filter(f => f.selected).length; 
+        if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } 
+        frame.selected = !frame.selected; 
+        openGallery(); 
+    }
+    
+    // NUEVA FUNCIÓN PARA ELIMINAR LOS SELECCIONADOS
+    function deleteSelectedFrames() {
+        capturedFrames = capturedFrames.filter(f => !f.selected);
+        document.getElementById('snapCount').innerText = capturedFrames.length;
+        openGallery();
+    }
+
     function renderCompareView() {
-        const view = document.getElementById('compareView'); const btnDownload = document.getElementById('btnDownloadComp'); const selected = capturedFrames.filter(f => f.selected); view.innerHTML = '';
-        if (selected.length === 0) { view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; btnDownload.style.display = 'none'; } 
-        else { selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; }
+        const view = document.getElementById('compareView'); 
+        const btnDownload = document.getElementById('btnDownloadComp'); 
+        const btnDelete = document.getElementById('btnDeleteComp');
+        const selected = capturedFrames.filter(f => f.selected); 
+        view.innerHTML = '';
+        
+        if (selected.length === 0) { 
+            view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; 
+            btnDownload.style.display = 'none'; 
+            btnDelete.style.display = 'none';
+        } else { 
+            selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); 
+            btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; 
+            btnDelete.style.display = 'flex'; // Mostrar botón de eliminar si hay al menos 1 seleccionado
+        }
     }
 
     function downloadComparison() {
@@ -453,7 +462,7 @@
     v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
 
     let currentTool = 'none', drawings = [], currentPath = null, isDrawing = false, startX=0, startY=0;
-    function setTool(tool) { currentTool = tool; document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"]):not(.ai-btn)').forEach(b => { b.classList.remove('active'); b.style.boxShadow='none';}); const btn=document.getElementById(`btn-${tool}`); btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; togglePanel(null); }
+    function setTool(tool) { currentTool = tool; document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"])').forEach(b => { b.classList.remove('active'); b.style.boxShadow='none';}); const btn=document.getElementById(`btn-${tool}`); btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; togglePanel(null); }
     function clearDrawings() { drawings = []; currentPath = null; }
 
     function drawLivingArrow(c, fx, fy, tx, ty, color, size, isLive) { const head = size * 4; const angle = Math.atan2(ty - fy, tx - fx); const distance = Math.hypot(tx - fx, ty - fy); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.beginPath(); if(isLive && distance > 20) { c.setLineDash([15, 10]); c.lineDashOffset = -(Date.now() / 20); } else c.setLineDash([]); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx - head*Math.cos(angle-Math.PI/6), ty - head*Math.sin(angle-Math.PI/6)); c.lineTo(tx - head*Math.cos(angle+Math.PI/6), ty - head*Math.sin(angle+Math.PI/6)); c.closePath(); c.fill(); }
@@ -466,9 +475,6 @@
     function renderLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const refVid = (targetMode==='v2') ? v2 : v1; const cTime = refVid.currentTime; 
-        
-        if(aiActive && poseModel && !refVid.paused && !aiProcessing) { aiProcessing = true; poseModel.send({image: refVid}).catch(() => aiProcessing = false); }
-        if(aiActive && poseData) drawSkeleton(ctx, poseData, canvas.width, canvas.height);
 
         drawings.forEach(d => {
             const maxTime = (d.type === 'timer') ? 10 : 3.5; const diff = cTime - d.time;
@@ -520,7 +526,6 @@
     canvas.addEventListener('touchstart', e => { if(currentTool==='none'&&e.touches.length===1){tX=e.touches[0].clientX; iT=(targetMode==='v2')?v2.currentTime:v1.currentTime; isGest=false;} }, {passive:false});
     canvas.addEventListener('touchmove', e => { if(currentTool==='none'&&e.touches.length===1){ const dx=e.touches[0].clientX-tX; if(Math.abs(dx)>15){ isGest=true; e.preventDefault(); const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); getActiveVids().forEach(v => v.currentTime = newT); } } }, {passive:false});
 
-    // FIX CRÍTICO: El sensor de reactivación de UI ahora escucha todo el documento y clics
     const ui = document.getElementById('uiOverlay'); let uiTimeout;
     const wakeUpUI = () => {
         ui.classList.remove('hidden-ui');
@@ -534,7 +539,7 @@
     
     document.addEventListener('mousemove', wakeUpUI);
     document.addEventListener('touchstart', wakeUpUI, {passive: true});
-    document.addEventListener('click', wakeUpUI); // Fuerza el encendido al tocar cualquier lado
+    document.addEventListener('click', wakeUpUI); 
     
     toggleCam();
     resizeCanvas(); renderLoop();
