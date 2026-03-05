@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ProCoach V14.6 - Recording Engine Fix</title>
+    <title>ProCoach V14.7 - Audio Control</title>
 
     <style>
         :root {
@@ -222,6 +222,7 @@
                     <button class="step-btn" onclick="stepTarget(-1)">⏪</button>
                     <button class="play-btn" onclick="togglePlayTarget()">⏯</button>
                     <button class="step-btn" onclick="stepTarget(1)">⏩</button>
+                    <button class="step-btn" id="btnMute" onclick="toggleMute()" style="margin-left: 5px; font-size: 20px;" title="Silenciar / Activar Audio Original">🔊</button>
                 </div>
                 
                 <select class="styled-select" style="width: 75px; background: rgba(0,0,0,0.5); border: none;" onchange="setSpeedTarget(this.value)">
@@ -279,6 +280,15 @@
     function updateThickness() { drawSize = parseInt(document.getElementById('lineWidth').value); }
     function updateZoom() { currentZoom = document.getElementById('zoomSlider').value; stage.style.transform = `scale(${currentZoom})`; }
     function toggleGrid(chk) { grid.style.display = chk.checked ? 'block' : 'none'; }
+
+    // FUNCIÓN DE MUTE AÑADIDA
+    let isVideoMuted = false;
+    function toggleMute() {
+        isVideoMuted = !isVideoMuted;
+        v1.muted = isVideoMuted;
+        v2.muted = isVideoMuted;
+        document.getElementById('btnMute').innerText = isVideoMuted ? '🔇' : '🔊';
+    }
 
     let outWidth = 1280, outHeight = 720;
     
@@ -496,7 +506,6 @@
         }
         if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
 
-        // BLOQUE DE GRABACIÓN RESTAURADO (Sin esto el video sale vacío)
         if (isRecording) {
             recCtx.fillStyle = '#0f172a'; recCtx.fillRect(0, 0, outWidth, outHeight);
             const camLayout = document.getElementById('camLayout').value; const format = document.getElementById('outFormat').value;
