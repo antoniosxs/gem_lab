@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ProCoach V14.5 - Light & Clean</title>
+    <title>ProCoach V14.6 - Recording Engine Fix</title>
 
     <style>
         :root {
@@ -110,7 +110,6 @@
             .top-pill-dock { right: 10px; top: 10px; }
             .tool-dock { left: 10px; }
             .playback-dock { width: 95%; padding: 10px; }
-            /* Zoom ahora se acomoda en lugar de desaparecer */
         }
     </style>
 </head>
@@ -379,7 +378,6 @@
         openGallery(); 
     }
     
-    // NUEVA FUNCIÓN PARA ELIMINAR LOS SELECCIONADOS
     function deleteSelectedFrames() {
         capturedFrames = capturedFrames.filter(f => !f.selected);
         document.getElementById('snapCount').innerText = capturedFrames.length;
@@ -400,7 +398,7 @@
         } else { 
             selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); 
             btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; 
-            btnDelete.style.display = 'flex'; // Mostrar botón de eliminar si hay al menos 1 seleccionado
+            btnDelete.style.display = 'flex'; 
         }
     }
 
@@ -497,6 +495,33 @@
             else if (currentTool === 'mag') drawMagnifier(ctx, currentPath.x, currentPath.y, refVid, canvas.width, canvas.height); 
         }
         if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
+
+        // BLOQUE DE GRABACIÓN RESTAURADO (Sin esto el video sale vacío)
+        if (isRecording) {
+            recCtx.fillStyle = '#0f172a'; recCtx.fillRect(0, 0, outWidth, outHeight);
+            const camLayout = document.getElementById('camLayout').value; const format = document.getElementById('outFormat').value;
+            let vW = outWidth, vH = outHeight, vX = 0, vY = 0;
+            
+            if (camLayout === 'split' && webcamStream && webcam.readyState >= 2) { 
+                if (format === 'vertical') { vH = outHeight / 2; drawContain(webcam, recCtx, 0, outHeight/2, outWidth, outHeight/2); } 
+                else { vW = outWidth / 2; drawContain(webcam, recCtx, outWidth/2, 0, outWidth/2, outHeight); } 
+            }
+            
+            if (currentMode === 'single') drawContain(v1, recCtx, vX, vY, vW, vH);
+            else if (currentMode === 'split') { drawContain(v1, recCtx, vX, vY, vW/2, vH); drawContain(v2, recCtx, vX + vW/2, vY, vW/2, vH); } 
+            else if (currentMode === 'ghost') { drawContain(v1, recCtx, vX, vY, vW, vH); recCtx.globalCompositeOperation = "screen"; recCtx.globalAlpha = 0.5; drawContain(v2, recCtx, vX, vY, vW, vH); recCtx.globalCompositeOperation = "source-over"; recCtx.globalAlpha = 1.0; }
+            
+            recCtx.drawImage(canvas, vX, vY, vW, vH);
+            
+            if (camLayout === 'bubble' && webcamStream && webcam.readyState >= 2) { 
+                const sRect = stage.getBoundingClientRect(); const cRect = webcam.getBoundingClientRect(); 
+                const pX = (cRect.left - sRect.left) / stage.clientWidth; const pY = (cRect.top - sRect.top) / stage.clientHeight; 
+                const bR = (cRect.width / stage.clientWidth) * outWidth / 2; const bX = (pX * outWidth) + bR; const bY = (pY * outHeight) + bR; 
+                drawSmartBubble(recCtx, webcam, bX, bY, bR);
+            }
+
+            recCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; recCtx.font = "bold 24px Arial"; recCtx.fillText("KSS Coach Pro", 20, outHeight - 30);
+        }
 
         requestAnimationFrame(renderLoop);
     }
