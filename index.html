@@ -381,4 +381,274 @@
         ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
         const camRatio = camVid.videoWidth / camVid.videoHeight; let sW = camVid.videoWidth, sH = camVid.videoHeight, sX = 0, sY = 0;
         if (camRatio > 1) { sW = sH; sX = (camVid.videoWidth - sW) / 2; } else { sH = sW; sY = (camVid.videoHeight - sH) / 2; }
-        try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), Math.floor
+        try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), Math.floor(x - radius), Math.floor(y - radius), radius * 2, radius * 2); } catch(e){}
+        ctx.restore(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.lineWidth = 6; ctx.strokeStyle = '#00e676'; ctx.stroke();
+    }
+
+    function drawContain(srcObj, ctxR, x, y, w, h) { 
+        const sW = srcObj.videoWidth || srcObj.width; const sH = srcObj.videoHeight || srcObj.height;
+        if (!sW) return; 
+        const vR = sW / sH, bR = w / h; 
+        let dW, dH, dX, dY; 
+        if (vR > bR) { dW = w; dH = w / vR; dX = x; dY = y + (h - dH) / 2; } 
+        else { dH = h; dW = h * vR; dX = x + (w - dW) / 2; dY = y; } 
+        ctxR.drawImage(srcObj, dX, dY, dW, dH); 
+    }
+
+    function addMotionStamp() {
+        const refVid = (targetMode==='v2') ? v2 : v1;
+        if (!refVid || refVid.videoWidth === 0) return;
+        const tmp = document.createElement('canvas');
+        tmp.width = refVid.videoWidth; tmp.height = refVid.videoHeight;
+        tmp.getContext('2d').drawImage(refVid, 0, 0);
+        const img = new Image();
+        img.onload = () => { drawings.push({ type: 'stamp', img: img, time: refVid.currentTime }); };
+        img.src = tmp.toDataURL('image/png');
+    }
+
+    // --- NUEVO MOTOR DE EXPORTACIÓN (Snapshot & Grabación 100% alineados con la UI) ---
+    function renderExportFrame(targetCtx, w, h) {
+        targetCtx.fillStyle = '#0f172a'; targetCtx.fillRect(0, 0, w, h);
+        const camLayout = stage.dataset.cam || 'hidden';
+        const format = stage.dataset.format || 'horizontal';
+        let vW = w, vH = h, vX = 0, vY = 0;
+
+        if (camLayout === 'split') {
+            if (format === 'vertical') {
+                vH = h / 2;
+                if (webcamStream && webcam.readyState >= 2) {
+                    drawContain(webcam, targetCtx, 0, h/2, w, h/2);
+                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(0, h/2 - 1, w, 2);
+                }
+            } else {
+                vW = w / 2;
+                if (webcamStream && webcam.readyState >= 2) {
+                    drawContain(webcam, targetCtx, w/2, 0, w/2, h);
+                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(w/2 - 1, 0, 2, h);
+                }
+            }
+        }
+
+        if (currentMode === 'single') {
+            drawContain(v1, targetCtx, vX, vY, vW, vH);
+        } else if (currentMode === 'split') {
+            drawContain(v1, targetCtx, vX, vY, vW/2, vH);
+            drawContain(v2, targetCtx, vX + vW/2, vY, vW/2, vH);
+            targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(vX + vW/2 - 1, vY, 2, vH);
+        } else if (currentMode === 'ghost') {
+            drawContain(v1, targetCtx, vX, vY, vW, vH);
+            targetCtx.globalCompositeOperation = "screen"; targetCtx.globalAlpha = 0.5;
+            drawContain(v2, targetCtx, vX, vY, vW, vH);
+            targetCtx.globalCompositeOperation = "source-over"; targetCtx.globalAlpha = 1.0;
+        }
+
+        targetCtx.drawImage(canvas, 0, 0, w, h); // Dibuja la capa de anotaciones que cubre todo
+
+        if (camLayout === 'bubble' && webcamStream && webcam.readyState >= 2) {
+            const sRect = stage.getBoundingClientRect(); const cRect = webcam.getBoundingClientRect();
+            const pX = (cRect.left - sRect.left) / stage.clientWidth; const pY = (cRect.top - sRect.top) / stage.clientHeight;
+            const bR = (cRect.width / stage.clientWidth) * w / 2; const bX = (pX * w) + bR; const bY = (pY * h) + bR;
+            drawSmartBubble(targetCtx, webcam, bX, bY, bR);
+        }
+
+        targetCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; targetCtx.font = "bold 24px Arial"; targetCtx.fillText("KSS Coach Pro", 20, h - 30);
+    }
+
+    let capturedFrames = [];
+    function takeSnapshot() {
+        renderExportFrame(recCtx, outWidth, outHeight);
+        const dataURL = recCanvas.toDataURL('image/png');
+        capturedFrames.push({ id: Date.now(), src: dataURL, selected: false });
+        document.getElementById('snapCount').innerText = capturedFrames.length;
+        const flash = document.getElementById('flashOverlay');
+        flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 100);
+    }
+
+    function openGallery() {
+        const modal = document.getElementById('galleryModal'); const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
+        if(capturedFrames.length === 0) { grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún.</p>'; }
+        capturedFrames.forEach((frame, index) => {
+            const div = document.createElement('div'); div.className = `frame-card ${frame.selected ? 'selected' : ''}`;
+            div.onclick = () => toggleSelectFrame(index);
+            div.innerHTML = `<img src="${frame.src}" alt="Frame"><div class="check-icon">✓</div>`;
+            grid.appendChild(div);
+        });
+        renderCompareView(); modal.classList.add('show');
+    }
+
+    function closeGallery() { document.getElementById('galleryModal').classList.remove('show'); }
+    
+    function toggleSelectFrame(index) { 
+        const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; 
+        if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } 
+        frame.selected = !frame.selected; openGallery(); 
+    }
+    
+    function deleteSelectedFrames() { capturedFrames = capturedFrames.filter(f => !f.selected); document.getElementById('snapCount').innerText = capturedFrames.length; openGallery(); }
+
+    function renderCompareView() {
+        const view = document.getElementById('compareView'); const btnDownload = document.getElementById('btnDownloadComp'); const btnDelete = document.getElementById('btnDeleteComp');
+        const selected = capturedFrames.filter(f => f.selected); view.innerHTML = '';
+        if (selected.length === 0) { view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; btnDownload.style.display = 'none'; btnDelete.style.display = 'none'; } 
+        else { selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; btnDelete.style.display = 'flex'; }
+    }
+
+    function downloadComparison() {
+        const selected = capturedFrames.filter(f => f.selected); if(selected.length !== 2) return;
+        const compCanvas = document.getElementById('compareCanvas'); const compCtx = compCanvas.getContext('2d');
+        compCanvas.width = outWidth * 2; compCanvas.height = outHeight;
+        const img1 = new Image(); const img2 = new Image(); img1.src = selected[0].src; img2.src = selected[1].src;
+        img1.onload = () => { compCtx.drawImage(img1, 0, 0); img2.onload = () => { compCtx.drawImage(img2, outWidth, 0); const a = document.createElement('a'); a.href = compCanvas.toDataURL('image/png'); a.download = `KSS-Comparacion-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }; };
+    }
+
+    function exportToKSS() {
+        const selected = capturedFrames.filter(f => f.selected); const framesToExport = selected.length > 0 ? selected : [capturedFrames[capturedFrames.length - 1]];
+        if(!framesToExport[0]) { alert("Captura al menos un frame primero usando '📸 Snap'"); return; }
+        const exportData = framesToExport.map(f => f.src);
+        const kssEvent = new CustomEvent('kss-frames-exported', { detail: { frames: exportData } });
+        window.dispatchEvent(kssEvent); if(window.parent !== window) { window.parent.dispatchEvent(kssEvent); }
+        alert(`¡Listo! ${exportData.length} frame(s) exportados.`); closeGallery();
+    }
+
+    let isDraggingCam = false, camOffsetX = 0, camOffsetY = 0;
+    function startDragCam(e) { if(stage.dataset.cam !== 'bubble') return; isDraggingCam = true; const r = webcam.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; camOffsetX = cx - r.left; camOffsetY = cy - r.top; }
+    function moveDragCam(e) { if(isDraggingCam) { if(e.touches) e.preventDefault(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; const sRect = stage.getBoundingClientRect(); let nL = cx - sRect.left - camOffsetX; let nT = cy - sRect.top - camOffsetY; nL = Math.max(0, Math.min(nL, stage.clientWidth - webcam.clientWidth)); nT = Math.max(0, Math.min(nT, stage.clientHeight - webcam.clientHeight)); webcam.style.left = nL + 'px'; webcam.style.top = nT + 'px'; webcam.style.right = 'auto'; webcam.style.bottom = 'auto'; } }
+    function endDragCam() { isDraggingCam = false; }
+    webcam.addEventListener('mousedown', startDragCam); window.addEventListener('mousemove', moveDragCam); window.addEventListener('mouseup', endDragCam);
+    webcam.addEventListener('touchstart', startDragCam, {passive:false}); window.addEventListener('touchmove', moveDragCam, {passive:false}); window.addEventListener('touchend', endDragCam);
+
+    let jogActive = false, lastJogX = 0;
+    const jogDial = document.getElementById('jogDial');
+    const startJog = (e) => { jogActive = true; lastJogX = e.touches ? e.touches[0].clientX : e.clientX; e.preventDefault(); };
+    const moveJog = (e) => { if(!jogActive) return; const cx = e.touches ? e.touches[0].clientX : e.clientX; const dx = cx - lastJogX; lastJogX = cx; getActiveVids().forEach(v => { v.pause(); v.currentTime += (dx * 0.008); }); };
+    const endJog = () => { jogActive = false; };
+    jogDial.addEventListener('mousedown', startJog); window.addEventListener('mousemove', moveJog); window.addEventListener('mouseup', endJog);
+    jogDial.addEventListener('touchstart', startJog, {passive:false}); window.addEventListener('touchmove', moveJog, {passive:false}); window.addEventListener('touchend', endJog);
+
+    let isRecording = false, mediaRecorder, recordedChunks = [];
+    async function executeRecording() { 
+        const btnMain = document.getElementById('btnRecord'); const btnStart = document.getElementById('btnStartRec'); 
+        if (!isRecording) { 
+            try { 
+                await toggleCam(); resizeCanvas(); 
+                const canvasStream = recCanvas.captureStream(30); 
+                const streamTracks = [...canvasStream.getTracks()];
+                if(webcamStream && stage.dataset.cam !== 'hidden') streamTracks.push(...webcamStream.getAudioTracks());
+                
+                const combinedStream = new MediaStream(streamTracks); 
+                // Añadimos videoBitsPerSecond para evitar problemas de códec que generen videos de 0 bytes
+                let opts = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 2500000 }; 
+                if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/mp4' }; 
+                
+                mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; 
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); }; 
+                mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-StudioCut-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; 
+                mediaRecorder.start(); isRecording = true; btnStart.innerText = "🛑 Detener y Guardar"; btnMain.classList.add('recording'); btnMain.innerText = "🛑 Grabando"; togglePanel(null); 
+            } catch (err) { alert("Error al grabar bro: " + err); } 
+        } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
+    }
+
+    let targetMode = 'sync';
+    function setTarget(mode) { targetMode = mode; document.querySelectorAll('.sync-selector button').forEach(b => b.classList.remove('active')); document.getElementById(`ctrl-${mode}`).classList.add('active'); document.documentElement.style.setProperty('--active-vid', mode === 'sync' ? '#0ea5e9' : (mode === 'v1' ? '#10b981' : '#f59e0b')); updateSliderUI(); }
+    function getActiveVids() { return targetMode === 'v1' ? [v1] : (targetMode === 'v2' ? [v2] : [v1, v2]); }
+    function togglePlayTarget() { const vids = getActiveVids(); if(vids[0].paused) vids.forEach(v => v.play()); else vids.forEach(v => v.pause()); }
+    function stepTarget(dir) { getActiveVids().forEach(v => { v.pause(); v.currentTime += dir * (1/30); }); }
+    function setSpeedTarget(rate) { getActiveVids().forEach(v => v.playbackRate = parseFloat(rate)); }
+
+    timeSlider.addEventListener('input', e => { const pct = e.target.value / 100; getActiveVids().forEach(v => { if(v.duration) v.currentTime = pct * v.duration; }); });
+    function updateSliderUI() { const refVid = (targetMode === 'v2') ? v2 : v1; if(refVid.duration) { timeSlider.value = (refVid.currentTime / refVid.duration) * 100; document.getElementById('timeDisplay').innerText = new Date(refVid.currentTime*1000).toISOString().substr(14,8); } }
+    v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
+
+    let currentTool = 'none', drawings = [], currentPath = null, isDrawing = false, startX=0, startY=0;
+    function setTool(tool) { currentTool = tool; document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"]):not([onclick^="addMotionStamp"])').forEach(b => { b.classList.remove('active'); b.style.boxShadow='none';}); const btn=document.getElementById(`btn-${tool}`); btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; togglePanel(null); }
+    function clearDrawings() { drawings = []; currentPath = null; }
+
+    function drawLivingArrow(c, fx, fy, tx, ty, color, size, isLive) { const head = size * 4; const angle = Math.atan2(ty - fy, tx - fx); const distance = Math.hypot(tx - fx, ty - fy); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.beginPath(); if(isLive && distance > 20) { c.setLineDash([15, 10]); c.lineDashOffset = -(Date.now() / 20); } else c.setLineDash([]); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx - head*Math.cos(angle-Math.PI/6), ty - head*Math.sin(angle-Math.PI/6)); c.lineTo(tx - head*Math.cos(angle+Math.PI/6), ty - head*Math.sin(angle+Math.PI/6)); c.closePath(); c.fill(); }
+    function drawLivingCircle(c, x, y, r, color, size, isLive) { c.strokeStyle = color; c.lineWidth = size; c.beginPath(); c.arc(x, y, r, 0, 2*Math.PI); c.stroke(); c.beginPath(); c.moveTo(x - r/2, y); c.lineTo(x + r/2, y); c.moveTo(x, y - r/2); c.lineTo(x, y + r/2); c.stroke(); if(isLive && r > 10) { const now = Date.now() / 500; c.setLineDash([5, 15]); c.lineWidth = size / 2; c.beginPath(); c.arc(x, y, r + size*2, now, now + Math.PI*2); c.stroke(); c.setLineDash([]); } }
+    function drawJointAngle(c, pts, color, size) { if(pts.length === 0) return; c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for(let i=1; i<pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke(); pts.forEach(p => { c.beginPath(); c.arc(p.x, p.y, size*1.5, 0, Math.PI*2); c.fill(); }); if(pts.length === 3) { const p1 = pts[0], p2 = pts[1], p3 = pts[2]; const a1 = Math.atan2(p1.y - p2.y, p1.x - p2.x); const a2 = Math.atan2(p3.y - p2.y, p3.x - p2.x); let angle = a2 - a1; if (angle < 0) angle += 2 * Math.PI; const arcRadius = 30 + size*2; c.beginPath(); c.moveTo(p2.x, p2.y); c.arc(p2.x, p2.y, arcRadius, a1, a1 + angle); c.closePath(); c.fillStyle = color.replace(')', ', 0.3)').replace('rgb', 'rgba'); if(color.startsWith('#')) c.fillStyle = color + '40'; c.fill(); const deg = Math.round((angle * 180) / Math.PI); const midAngle = a1 + (angle / 2); c.font = `bold ${Math.max(16, size*3)}px Arial`; c.fillStyle = 'white'; c.shadowColor = 'black'; c.shadowBlur = 4; c.fillText(`${deg > 180 ? 360 - deg : deg}°`, p2.x + Math.cos(midAngle) * (arcRadius + 20) - 10, p2.y + Math.sin(midAngle) * (arcRadius + 20) + 5); c.shadowBlur = 0; } }
+    function drawTimer(c, x, y, startTime, currentTime, color, size) { let diff = currentTime - startTime; if(diff < 0) diff = 0; const text = new Date(diff * 1000).toISOString().substr(14, 8); c.font = `bold ${Math.max(20, size*5)}px monospace`; c.fillStyle = color; c.shadowColor = 'black'; c.shadowBlur = 8; const w = c.measureText(text).width; c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(x - 10, y - 30, w + 20, 40); c.fillStyle = color; c.fillText(text, x, y); c.shadowBlur = 0; }
+    function drawMagnifier(c, x, y, videoObj, cW, cH) { if (!videoObj || videoObj.videoWidth === 0) return; const radius = 60; const zoomLevel = 2.5; c.save(); c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 15; c.lineWidth = 4; c.strokeStyle = drawColor; c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.stroke(); c.shadowBlur = 0; c.clip(); const vR = videoObj.videoWidth / videoObj.videoHeight; const bR = cW / cH; let dW, dH, dX = 0, dY = 0; if (vR > bR) { dW = cW; dH = cW / vR; dY = (cH - dH) / 2; } else { dH = cH; dW = cH * vR; dX = (cW - dW) / 2; } const relX = x - dX; const relY = y - dY; const srcX = (relX / dW) * videoObj.videoWidth; const srcY = (relY / dH) * videoObj.videoHeight; const sW = videoObj.videoWidth / zoomLevel; const sH = videoObj.videoHeight / zoomLevel; c.drawImage(videoObj, srcX - (sW / 2), srcY - (sH / 2), sW, sH, 0, 0, cW, cH ); c.beginPath(); c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1; c.moveTo(x - radius, y); c.lineTo(x + radius, y); c.moveTo(x, y - radius); c.lineTo(x, y + radius); c.stroke(); c.restore(); }
+
+    function renderLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const refVid = (targetMode==='v2') ? v2 : v1; const cTime = refVid.currentTime; 
+
+        drawings.forEach(d => {
+            const maxTime = (d.type === 'timer') ? 10 : (d.type === 'stamp' ? 8 : 3.5); 
+            const diff = cTime - d.time;
+            if (diff >= 0 && diff <= maxTime) { 
+                const alpha = 1 - (diff / maxTime); let r=0, g=230, b=118; 
+                if(d.color && /^#([A-Fa-f0-9]{3}){1,2}$/.test(d.color)){ let c= d.color.substring(1).split(''); if(c.length==3) c=[c[0],c[0],c[1],c[1],c[2],c[2]]; c='0x'+c.join(''); r=(c>>16)&255; g=(c>>8)&255; b=c&255; }
+                const currentColor = `rgba(${r}, ${g}, ${b}, ${d.type === 'timer' ? 1 : alpha})`; 
+                
+                if (d.type === 'draw') { ctx.strokeStyle = currentColor; ctx.lineWidth = d.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(d.points[0].x, d.points[0].y); d.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); }
+                else if (d.type === 'circle') drawLivingCircle(ctx, d.x, d.y, d.radius, currentColor, d.size, true);
+                else if (d.type === 'arrow') drawLivingArrow(ctx, d.fx, d.fy, d.tx, d.ty, currentColor, d.size, true);
+                else if (d.type === 'joint') drawJointAngle(ctx, d.points, currentColor, d.size);
+                else if (d.type === 'timer') drawTimer(ctx, d.x, d.y, d.startTime, cTime, d.color, d.size);
+                else if (d.type === 'stamp') { ctx.globalAlpha = alpha * 0.6; drawContain(d.img, ctx, 0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1.0; }
+                else if (d.type === 'text') { ctx.font = `bold ${Math.max(20, d.size*5)}px sans-serif`; ctx.fillStyle = currentColor; ctx.shadowColor = 'black'; ctx.shadowBlur = 6; ctx.fillText(d.text, d.x, d.y); ctx.shadowBlur = 0; }
+            }
+        });
+
+        if (isDrawing && currentPath) {
+            if (currentTool === 'draw') { ctx.strokeStyle = drawColor; ctx.lineWidth = drawSize; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(currentPath.points[0].x, currentPath.points[0].y); currentPath.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); }
+            else if (currentTool === 'circle') drawLivingCircle(ctx, currentPath.x, currentPath.y, currentPath.radius, drawColor, drawSize, false);
+            else if (currentTool === 'arrow') drawLivingArrow(ctx, currentPath.fx, currentPath.fy, currentPath.tx, currentPath.ty, drawColor, drawSize, false);
+            else if (currentTool === 'mag') drawMagnifier(ctx, currentPath.x, currentPath.y, refVid, canvas.width, canvas.height); 
+        }
+        if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
+
+        if (isRecording) {
+            renderExportFrame(recCtx, outWidth, outHeight);
+        }
+
+        requestAnimationFrame(renderLoop);
+    }
+
+    function getCoords(e) { const r = canvas.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; const sX = canvas.width / r.width; const sY = canvas.height / r.height; return { x: (cx - r.left) * sX, y: (cy - r.top) * sY }; }
+    function sDraw(e) { if(e.target.closest('.interactive-ui') || e.target.closest('.jog-dial-container')) return; if(currentTool === 'none') return; const p = getCoords(e); const rt = (targetMode==='v2') ? v2.currentTime : v1.currentTime;
+        if (currentTool === 'timer') { drawings.push({ type: 'timer', time: rt, startTime: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); setTool('none'); return; }
+        if (currentTool === 'text') { const txt = prompt("Ingresa el texto:"); if(txt) { drawings.push({ type: 'text', text: txt, time: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); } setTool('none'); return; }
+        if (currentTool === 'joint') { if(!currentPath || currentPath.type !== 'joint') { currentPath = { type: 'joint', time: rt, color: drawColor, size: drawSize, points: [p] }; } else { currentPath.points.push(p); if(currentPath.points.length === 3) { drawings.push({...currentPath}); currentPath = null; } } return; }
+        isDrawing = true; startX = p.x; startY = p.y; 
+        if(currentTool === 'draw') currentPath = { type: 'draw', time: rt, color: drawColor, size: drawSize, points: [p] }; 
+        else if(currentTool === 'circle') currentPath = { type: 'circle', time: rt, color: drawColor, size: drawSize, x: startX, y: startY, radius: 0 }; 
+        else if(currentTool === 'arrow') currentPath = { type: 'arrow', time: rt, color: drawColor, size: drawSize, fx: startX, fy: startY, tx: startX, ty: startY };
+        else if(currentTool === 'mag') currentPath = { type: 'mag', x: startX, y: startY }; 
+    }
+    function mDraw(e) { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing || currentTool === 'none') return; e.preventDefault(); const p = getCoords(e); 
+        if(currentTool === 'draw') currentPath.points.push(p); 
+        else if(currentTool === 'circle') currentPath.radius = Math.hypot(p.x - startX, p.y - startY); 
+        else if(currentTool === 'arrow') { currentPath.tx = p.x; currentPath.ty = p.y; }
+        else if(currentTool === 'mag') { currentPath.x = p.x; currentPath.y = p.y; } 
+    }
+    function eDraw() { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing) return; isDrawing = false; if(currentPath && currentTool !== 'mag') { drawings.push(currentPath); } currentPath = null; }
+    
+    canvas.addEventListener('mousedown', sDraw); canvas.addEventListener('mousemove', mDraw); window.addEventListener('mouseup', eDraw);
+    canvas.addEventListener('touchstart', sDraw, {passive: false}); canvas.addEventListener('touchmove', mDraw, {passive: false}); window.addEventListener('touchend', eDraw);
+
+    let tX=0, isGest=false, iT=0;
+    canvas.addEventListener('touchstart', e => { if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){tX=e.touches[0].clientX; iT=(targetMode==='v2')?v2.currentTime:v1.currentTime; isGest=false;} }, {passive:false});
+    canvas.addEventListener('touchmove', e => { if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){ const dx=e.touches[0].clientX-tX; if(Math.abs(dx)>15){ isGest=true; e.preventDefault(); const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); getActiveVids().forEach(v => v.currentTime = newT); } } }, {passive:false});
+
+    const ui = document.getElementById('uiOverlay'); let uiTimeout;
+    const wakeUpUI = () => {
+        ui.classList.remove('hidden-ui');
+        clearTimeout(uiTimeout);
+        uiTimeout = setTimeout(() => { 
+            if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) {
+                ui.classList.add('hidden-ui'); 
+            }
+        }, 3500);
+    };
+    
+    document.addEventListener('mousemove', wakeUpUI);
+    document.addEventListener('touchstart', wakeUpUI, {passive: true});
+    document.addEventListener('click', wakeUpUI); 
+    
+    toggleCam();
+    resizeCanvas(); renderLoop();
+</script>
+</body>
+</html>
