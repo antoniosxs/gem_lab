@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ProCoach V14.9 - Studio Pro (Split Fix)</title>
+    <title>KSS VIDEO ANALYSIS - ProCoach V15.6</title>
 
     <style>
         :root {
@@ -16,13 +16,23 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; position: fixed; inset: 0; }
         .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
+        /* ZONA DE AGARRE PARA ARRASTRAR (DRAG GRIP) */
+        .draggable-panel { cursor: grab; position: absolute; transition: transform 0.2s, box-shadow 0.2s; }
+        .draggable-panel:active { cursor: grabbing; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+        .drag-grip { width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; opacity: 0.4; padding-top: 4px; padding-bottom: 4px;}
+        .drag-grip::after { content: ''; width: 30px; height: 4px; background: white; border-radius: 2px; }
+
+        /* CABECERA DE MARCA PRINCIPAL */
+        .system-brand-header { top: 15px; left: 15px; display: flex; align-items: center; gap: 10px; z-index: 60; padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); border: 1px solid var(--border);}
+        .system-brand-header img { height: 32px; width: auto; object-fit: contain; pointer-events: none;}
+        .system-brand-header h1 { font-size: 16px; font-weight: 800; color: white; letter-spacing: 1px; text-transform: uppercase; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none;}
+
         .stage-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background-image: radial-gradient(circle at center, #1e293b 0%, #000 100%); overflow: hidden; position: relative; z-index: 10; }
         
-        .video-stage { position: relative; display: flex; background: #000; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9); transform-origin: center center; transition: transform 0.1s; }
+        .video-stage { position: relative; display: flex; background: #000; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9); transform-origin: center center; transition: transform 0.1s; border-radius: 4px; }
         
-        /* SISTEMA ROBUSTO DE PANTALLAS (SINGLE, GHOST, DUAL) */
         .vid-wrapper { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        video { max-width: 100%; max-height: 100%; pointer-events: none; object-fit: contain; }
+        video { max-width: 100%; max-height: 100%; pointer-events: none; object-fit: contain; transform-origin: center center; }
         
         .mode-single #wrap1 { width: 100%; height: 100%; }
         .mode-single #wrap2 { display: none; }
@@ -33,7 +43,6 @@
         .mode-ghost #wrap1 { width: 100%; height: 100%; }
         .mode-ghost #wrap2 { width: 100%; height: 100%; opacity: 0.5; mix-blend-mode: screen; }
 
-        /* FIX PANTALLA DIVIDIDA (HORIZONTAL 16:9) */
         .video-stage[data-cam="split"] #wrap1 { width: 50%; right: 50%; border-right: 2px solid var(--accent); }
         .video-stage[data-cam="split"].mode-single #wrap1 { width: 50%; right: 50%; border-right: 2px solid var(--accent); }
         .video-stage[data-cam="split"].mode-split #wrap1 { width: 25%; right: 75%; border-right: 2px solid var(--accent); }
@@ -41,13 +50,8 @@
         .video-stage[data-cam="split"].mode-ghost #wrap1 { width: 50%; right: 50%; border-right: 2px solid var(--accent); }
         .video-stage[data-cam="split"].mode-ghost #wrap2 { width: 50%; right: 50%; left: 0; border-right: 2px solid var(--accent); }
 
-        .video-stage[data-cam="split"] #webcamVideo {
-            position: absolute; display: block; right: 0; left: auto; top: 0; bottom: 0;
-            width: 50%; height: 100%; border-radius: 0; border: none; background: #000;
-            object-fit: contain; z-index: 5; cursor: default; pointer-events: none;
-        }
+        .video-stage[data-cam="split"] #webcamVideo { position: absolute; display: block; right: 0; left: auto; top: 0; bottom: 0; width: 50%; height: 100%; border-radius: 0; border: none; background: #000; object-fit: contain; z-index: 5; cursor: default; pointer-events: none; }
 
-        /* FIX PANTALLA DIVIDIDA (VERTICAL 9:16) */
         .video-stage[data-cam="split"][data-format="vertical"] #wrap1 { width: 100%; height: 50%; top: 0; bottom: 50%; right: 0; border-right: none; border-bottom: 2px solid var(--accent); }
         .video-stage[data-cam="split"][data-format="vertical"].mode-single #wrap1 { width: 100%; height: 50%; border-right: none; border-bottom: 2px solid var(--accent); }
         .video-stage[data-cam="split"][data-format="vertical"].mode-split #wrap1 { width: 50%; height: 50%; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); right: 50%; }
@@ -55,13 +59,8 @@
         .video-stage[data-cam="split"][data-format="vertical"].mode-ghost #wrap1 { width: 100%; height: 50%; border-right: none; border-bottom: 2px solid var(--accent); }
         .video-stage[data-cam="split"][data-format="vertical"].mode-ghost #wrap2 { width: 100%; height: 50%; left: 0; right: 0; border-right: none; border-bottom: 2px solid var(--accent); }
 
-        .video-stage[data-cam="split"][data-format="vertical"] #webcamVideo {
-            position: absolute; right: 0; left: 0; top: 50%; bottom: 0;
-            width: 100%; height: 50%; border-radius: 0; border: none; background: #000;
-            object-fit: contain; z-index: 5; cursor: default; pointer-events: none;
-        }
+        .video-stage[data-cam="split"][data-format="vertical"] #webcamVideo { position: absolute; right: 0; left: 0; top: 50%; bottom: 0; width: 100%; height: 50%; border-radius: 0; border: none; background: #000; object-fit: contain; z-index: 5; cursor: default; pointer-events: none; }
 
-        /* WEBCAM BURBUJA */
         .webcam-bubble { position: absolute; width: 120px; height: 120px; border: 3px solid var(--accent); border-radius: 50%; z-index: 60; background: #000; box-shadow: 0 10px 30px rgba(0,230,118,0.3); object-fit: cover; cursor: grab; pointer-events: auto; right: 20px; bottom: 20px; }
         .video-stage[data-cam="hidden"] #webcamVideo { display: none; }
 
@@ -78,7 +77,7 @@
         
         .ui-element { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        .tool-dock { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; z-index: 55; }
+        .tool-dock { top: 75px; left: 15px; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px 8px 8px; border-radius: 16px; z-index: 55; }
         .tool-btn { background: transparent; border: none; color: white; width: 40px; height: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
         .tool-btn:hover { background: rgba(255,255,255,0.1); }
         .tool-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
@@ -87,8 +86,17 @@
         .quick-colors { display: flex; flex-direction: column; gap: 5px; align-items: center; margin: 5px 0; }
         .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
         .color-dot.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
+        .btn-clear { color: #ef4444; }
 
-        .top-pill-dock { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; }
+        @media (max-height: 800px) {
+            .tool-dock { display: grid; grid-template-columns: 40px 40px; }
+            .drag-grip { grid-column: 1 / -1; }
+            .dock-divider { grid-column: 1 / -1; width: 90%; }
+            .quick-colors { flex-direction: row; grid-column: 1 / -1; justify-content: space-around; width: 100%; padding: 0 5px; }
+            .btn-clear { grid-column: 1 / -1; width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.5); }
+        }
+
+        .top-pill-dock { top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; padding: 5px; }
         .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px;}
         .pill-btn:hover { background: rgba(255,255,255,0.1); }
         .pill-btn.snapshot { background: #3b82f6; border-color: #60a5fa; }
@@ -97,7 +105,7 @@
         .pill-btn.record.recording { animation: pulseRec 1.5s infinite; }
         @keyframes pulseRec { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
 
-        .popover-panel { position: absolute; top: 60px; right: 15px; width: 260px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
+        .popover-panel { position: absolute; top: 100%; right: 0; width: 260px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .popover-panel.show { display: flex; }
         .panel-title { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 5px; }
@@ -111,7 +119,7 @@
         input[type="range"] { flex: 1; accent-color: var(--accent); }
         select.styled-select { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px 10px; border-radius: 6px; width: 100%; font-size: 12px; outline: none;}
 
-        .playback-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px; z-index: 55; }
+        .playback-dock { bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 4px 15px 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px; z-index: 55; }
         .playback-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .sync-selector { display: flex; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid #334155; }
         .sync-selector button { border: none; background: transparent; color: #94a3b8; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -148,9 +156,9 @@
         .flash-overlay.flash { opacity: 0.8; }
         
         @media (max-width: 768px) {
-            .top-pill-dock { right: 10px; top: 10px; }
-            .tool-dock { left: 10px; }
-            .playback-dock { width: 95%; padding: 10px; }
+            .system-brand-header h1 { font-size: 12px; }
+            .system-brand-header img { height: 24px; }
+            .playback-dock { width: 95%; }
         }
     </style>
 </head>
@@ -172,8 +180,15 @@
 
     <div id="uiOverlay" class="ui-layer">
         
-        <div class="ui-element tool-dock interactive-ui">
+        <div class="system-brand-header interactive-ui draggable-panel" id="brandHeader">
+            <img src="kss_coach_512.png" alt="KSS Video Analysis Logo" onerror="this.style.display='none'">
+            <h1>KSS VIDEO ANALYSIS</h1>
+        </div>
+
+        <div class="ui-element tool-dock interactive-ui draggable-panel" id="smartDock">
+            <div class="drag-grip"></div>
             <button class="tool-btn active" id="btn-none" onclick="setTool('none')" title="Gestos">🖱</button>
+            <button class="tool-btn" id="btn-pan" onclick="setTool('pan')" title="Mover Video (Encuadre)" style="color: #a78bfa;">✋</button>
             <div class="dock-divider"></div>
             <button class="tool-btn" id="btn-draw" onclick="setTool('draw')" title="Trazo">✏️</button>
             <button class="tool-btn" id="btn-arrow" onclick="setTool('arrow')" title="Vector">↗️</button>
@@ -182,8 +197,7 @@
             <button class="tool-btn" id="btn-text" onclick="setTool('text')" title="Texto Rápido">T</button>
             <button class="tool-btn" id="btn-mag" onclick="setTool('mag')" title="Lupa Dinámica" style="color: #60a5fa;">🔎</button>
             <button class="tool-btn" id="btn-timer" onclick="setTool('timer')" title="Cronómetro" style="color: #facc15;">⏱️</button>
-            <div class="dock-divider"></div>
-            <button class="tool-btn" id="btn-stamp" onclick="addMotionStamp()" title="Estroboscopio (Dejar Rastro)" style="color: #c084fc;">👤</button>
+            <button class="tool-btn" id="btn-stamp" onclick="addMotionStamp()" title="Estroboscopio (Rastro)" style="color: #c084fc;">👤</button>
             <div class="dock-divider"></div>
             <div class="quick-colors">
                 <button class="color-dot active" style="background:#00e676;" onclick="setQuickColor('#00e676', this)"></button>
@@ -192,122 +206,118 @@
                 <button class="color-dot" style="background:#eab308;" onclick="setQuickColor('#eab308', this)"></button>
             </div>
             <div class="dock-divider"></div>
-            <button class="tool-btn" onclick="clearDrawings()" style="color: #ef4444;" title="Limpiar Todo">🗑</button>
+            <button class="tool-btn btn-clear" onclick="clearDrawings()" title="Limpiar Todo">🗑</button>
         </div>
 
-        <div class="top-pill-dock interactive-ui">
+        <div class="top-pill-dock interactive-ui draggable-panel" id="topDock" style="background: rgba(15, 23, 42, 0.4); border-radius: 20px;">
+            <div class="drag-grip" style="width: 20px; height: 100%; flex-direction: column; opacity: 0.8; margin-right: 5px;"></div>
             <button class="pill-btn" onclick="togglePanel('panel-files')">📁 Archivos</button>
             <button class="pill-btn" onclick="togglePanel('panel-layout')">♊ Layout</button>
             <button class="pill-btn snapshot" onclick="takeSnapshot()">📸 Snap</button>
             <button class="pill-btn gallery" onclick="openGallery()">🖼️ Galería (<span id="snapCount">0</span>)</button>
             <button class="pill-btn record" id="btnRecord" onclick="togglePanel('panel-studio')">🔴 Estudio</button>
-        </div>
-
-        <div id="panel-files" class="ui-element popover-panel interactive-ui">
-            <div class="panel-group">
-                <span class="panel-title">Video Principal (V1)</span>
-                <div class="file-upload-btn"><span>⬆️ Cargar Video 1</span><input type="file" id="up1" accept="video/*"></div>
+            
+            <div id="panel-files" class="ui-element popover-panel">
+                <div class="panel-group"><span class="panel-title">Video Principal (V1)</span><div class="file-upload-btn"><span>⬆️ Cargar Video 1</span><input type="file" id="up1" accept="video/*"></div></div>
+                <div class="panel-group"><span class="panel-title">Video Comparación (V2)</span><div class="file-upload-btn"><span>⬆️ Cargar Video 2</span><input type="file" id="up2" accept="video/*"></div></div>
             </div>
-            <div class="panel-group">
-                <span class="panel-title">Video Comparación (V2)</span>
-                <div class="file-upload-btn"><span>⬆️ Cargar Video 2</span><input type="file" id="up2" accept="video/*"></div>
-            </div>
-        </div>
 
-        <div id="panel-layout" class="ui-element popover-panel interactive-ui">
-            <div class="panel-group">
-                <span class="panel-title">Modo de Comparación</span>
-                <div class="segmented-control">
-                    <button class="active" onclick="setLayout('single', this)">Simple</button>
-                    <button onclick="setLayout('split', this)">Dual</button>
-                    <button onclick="setLayout('ghost', this)">Ghost</button>
+            <div id="panel-layout" class="ui-element popover-panel">
+                <div class="panel-group"><span class="panel-title">Modo de Comparación</span><div class="segmented-control"><button class="active" onclick="setLayout('single', this)">Simple</button><button onclick="setLayout('split', this)">Dual</button><button onclick="setLayout('ghost', this)">Ghost</button></div></div>
+                <div class="panel-group" style="margin-top: 5px;"><div class="panel-row"><span style="font-size: 13px;">Cuadrícula Biomecánica</span><input type="checkbox" onchange="toggleGrid(this)" style="accent-color: var(--accent); width: 18px; height: 18px;"></div></div>
+                
+                <div class="panel-group" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+                    <span class="panel-title">Zoom / Encuadre (V1, V2 y CAM)</span>
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span style="font-size:11px; color:var(--accent);">V1</span>
+                        <input type="range" min="0.5" max="4" step="0.1" value="1" oninput="vT.v1.s = this.value; updateVidTransform('v1');" style="flex:1;">
+                        <button onclick="vT.v1={x:0,y:0,s:1}; this.previousElementSibling.value=1; updateVidTransform('v1');" style="background:transparent; border:1px solid #475569; color:white; border-radius:4px; padding:2px 6px; font-size:10px;">Reset</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 10px; margin-top:5px;">
+                        <span style="font-size:11px; color:#f59e0b;">V2</span>
+                        <input type="range" min="0.5" max="4" step="0.1" value="1" oninput="vT.v2.s = this.value; updateVidTransform('v2');" style="flex:1;">
+                        <button onclick="vT.v2={x:0,y:0,s:1}; this.previousElementSibling.value=1; updateVidTransform('v2');" style="background:transparent; border:1px solid #475569; color:white; border-radius:4px; padding:2px 6px; font-size:10px;">Reset</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 10px; margin-top:5px;">
+                        <span style="font-size:11px; color:#ef4444; font-weight:bold;">CAM</span>
+                        <input type="range" min="0.5" max="4" step="0.1" value="1" oninput="vT.cam.s = this.value; updateVidTransform('cam');" style="flex:1; accent-color:#ef4444;">
+                        <button onclick="vT.cam={x:0,y:0,s:1}; this.previousElementSibling.value=1; updateVidTransform('cam');" style="background:transparent; border:1px solid #475569; color:white; border-radius:4px; padding:2px 6px; font-size:10px;">Reset</button>
+                    </div>
                 </div>
+
+                <div class="panel-group" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;"><span class="panel-title">Grosor de Línea</span><input type="range" id="lineWidth" min="2" max="12" value="4" onchange="updateThickness()"></div>
             </div>
-            <div class="panel-group" style="margin-top: 5px;">
-                <div class="panel-row">
-                    <span style="font-size: 13px;">Cuadrícula Biomecánica</span>
-                    <input type="checkbox" onchange="toggleGrid(this)" style="accent-color: var(--accent); width: 18px; height: 18px;">
-                </div>
-            </div>
-            <div class="panel-group" style="margin-top: 5px;">
-                <span class="panel-title">Grosor de Línea</span>
-                <input type="range" id="lineWidth" min="2" max="12" value="4" onchange="updateThickness()">
+
+            <div id="panel-studio" class="ui-element popover-panel">
+                <div class="panel-group"><span class="panel-title">Formato de Salida</span><select id="outFormat" class="styled-select" onchange="resizeCanvas()"><option value="horizontal">📺 Horizontal 16:9</option><option value="vertical">📱 Vertical 9:16 (Reel)</option></select></div>
+                <div class="panel-group"><span class="panel-title">Cámara del Coach</span><select id="camLayout" class="styled-select" onchange="toggleCam()"><option value="hidden">Oculta</option><option value="bubble" selected>🫧 Burbuja Flotante</option><option value="split">🎭 Pantalla Dividida</option></select></div>
+                <button onclick="executeRecording()" style="background: var(--record); border: none; color: white; padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer;" id="btnStartRec">🔴 Iniciar Grabación</button>
             </div>
         </div>
 
-        <div id="panel-studio" class="ui-element popover-panel interactive-ui">
-            <div class="panel-group">
-                <span class="panel-title">Formato de Salida</span>
-                <select id="outFormat" class="styled-select" onchange="resizeCanvas()">
-                    <option value="horizontal">📺 Horizontal 16:9</option>
-                    <option value="vertical">📱 Vertical 9:16 (Reel)</option>
-                </select>
-            </div>
-            <div class="panel-group">
-                <span class="panel-title">Cámara del Coach</span>
-                <select id="camLayout" class="styled-select" onchange="toggleCam()">
-                    <option value="hidden">Oculta</option>
-                    <option value="bubble" selected>🫧 Burbuja Flotante</option>
-                    <option value="split">🎭 Pantalla Dividida</option>
-                </select>
-            </div>
-            <button onclick="executeRecording()" style="background: var(--record); border: none; color: white; padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer;" id="btnStartRec">🔴 Iniciar Grabación</button>
-        </div>
-
-        <div class="ui-element playback-dock interactive-ui">
+        <div class="ui-element playback-dock interactive-ui draggable-panel" id="playbackDock">
+            <div class="drag-grip"></div>
             <div class="playback-controls">
-                <div class="sync-selector">
-                    <button id="ctrl-v1" onclick="setTarget('v1')">V1</button>
-                    <button id="ctrl-sync" class="active" onclick="setTarget('sync')">SYNC</button>
-                    <button id="ctrl-v2" onclick="setTarget('v2')">V2</button>
-                </div>
-                
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <button class="step-btn" onclick="stepTarget(-1)">⏪</button>
-                    <button class="play-btn" onclick="togglePlayTarget()">⏯</button>
-                    <button class="step-btn" onclick="stepTarget(1)">⏩</button>
-                    <button class="step-btn" id="btnMute" onclick="toggleMute()" style="margin-left: 5px; font-size: 20px;" title="Silenciar / Activar Audio Original">🔊</button>
-                </div>
-                
-                <select class="styled-select" style="width: 75px; background: rgba(0,0,0,0.5); border: none;" onchange="setSpeedTarget(this.value)">
-                    <option value="0.25">0.25x</option>
-                    <option value="0.5">0.5x</option>
-                    <option value="1" selected>1.0x</option>
-                </select>
+                <div class="sync-selector"><button id="ctrl-v1" onclick="setTarget('v1')">V1</button><button id="ctrl-sync" class="active" onclick="setTarget('sync')">SYNC</button><button id="ctrl-v2" onclick="setTarget('v2')">V2</button></div>
+                <div style="display: flex; align-items: center; gap: 15px;"><button class="step-btn" onclick="stepTarget(-1)">⏪</button><button class="play-btn" onclick="togglePlayTarget()">⏯</button><button class="step-btn" onclick="stepTarget(1)">⏩</button><button class="step-btn" id="btnMute" onclick="toggleMute()" style="margin-left: 5px; font-size: 20px;" title="Silenciar / Activar Audio Original">🔊</button></div>
+                <select class="styled-select" style="width: 75px; background: rgba(0,0,0,0.5); border: none;" onchange="setSpeedTarget(this.value)"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1.0x</option></select>
             </div>
-            
-            <div class="timeline-row">
-                <span class="time-display" id="timeDisplay">00:00.00</span>
-                <input type="range" id="timeSlider" class="timeline-slider" min="0" max="100" value="0" step="0.1">
-                <div class="zoom-control">
-                    <span>🔍</span><input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.1" value="1" oninput="updateZoom()">
-                </div>
-            </div>
-            
-            <div class="jog-dial-container" id="jogDial" title="Arrastra para mover cuadro a cuadro">
-                <div class="jog-track">|| | | | | | | | | | | | | | | ||</div>
-            </div>
+            <div class="timeline-row"><span class="time-display" id="timeDisplay">00:00.00</span><input type="range" id="timeSlider" class="timeline-slider" min="0" max="100" value="0" step="0.1"><div class="zoom-control"><span>🔍</span><input type="range" id="zoomSlider" class="zoom-slider" min="0.4" max="3" step="0.1" value="1" oninput="updateZoom()"></div></div>
+            <div class="jog-dial-container" id="jogDial" title="Arrastra para mover cuadro a cuadro"><div class="jog-track">|| | | | | | | | | | | | | | | ||</div></div>
         </div>
     </div>
 
     <div id="galleryModal" class="gallery-modal">
-        <div class="gallery-header">
-            <h2 style="color: white; margin: 0; font-size: 20px;">📸 Laboratorio de Frames</h2>
-            <button onclick="closeGallery()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">✕</button>
-        </div>
+        <div class="gallery-header"><h2 style="color: white; margin: 0; font-size: 20px;">📸 Laboratorio de Frames</h2><button onclick="closeGallery()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">✕</button></div>
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 10px; width: 100%; max-width: 900px;">Selecciona hasta 2 frames para compararlos lado a lado.</p>
-        <div class="gallery-grid" id="galleryGrid"></div>
-        <div class="compare-view" id="compareView"></div>
-        
-        <div class="gallery-footer">
-            <button class="btn-delete" onclick="deleteSelectedFrames()" id="btnDeleteComp" style="display: none;">🗑️ Eliminar</button>
-            <button class="pill-btn" onclick="downloadComparison()" id="btnDownloadComp" style="display: none; background: #334155; border: none;">⬇️ Descargar Juntos</button>
-            <button class="btn-kss" onclick="exportToKSS()">🚀 Exportar a KSS</button>
-        </div>
+        <div class="gallery-grid" id="galleryGrid"></div><div class="compare-view" id="compareView"></div>
+        <div class="gallery-footer"><button class="btn-delete" onclick="deleteSelectedFrames()" id="btnDeleteComp" style="display: none;">🗑️ Eliminar</button><button class="pill-btn" onclick="downloadComparison()" id="btnDownloadComp" style="display: none; background: #334155; border: none;">⬇️ Descargar Juntos</button><button class="btn-kss" onclick="exportToKSS()">🚀 Exportar a KSS</button></div>
     </div>
 </div>
 
 <script>
+    function makeDraggable(elmnt) {
+        if (!elmnt) return;
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        elmnt.onmousedown = dragMouseDown;
+        elmnt.addEventListener('touchstart', dragMouseDown, {passive: false});
+
+        function dragMouseDown(e) {
+            if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel')) return;
+            e.preventDefault();
+            if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
+            else { pos3 = e.clientX; pos4 = e.clientY; }
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+            document.addEventListener('touchend', closeDragElement, {passive: false});
+            document.addEventListener('touchmove', elementDrag, {passive: false});
+        }
+        function elementDrag(e) {
+            if(e.type === 'touchmove') {
+                pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY;
+                pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+            } else {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+                pos3 = e.clientX; pos4 = e.clientY;
+            }
+            if (elmnt.style.transform) elmnt.style.transform = "none";
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.bottom = "auto"; elmnt.style.right = "auto";
+        }
+        function closeDragElement() {
+            document.onmouseup = null; document.onmousemove = null;
+            document.removeEventListener('touchend', closeDragElement);
+            document.removeEventListener('touchmove', elementDrag);
+        }
+    }
+
+    makeDraggable(document.getElementById('brandHeader'));
+    makeDraggable(document.getElementById('smartDock'));
+    makeDraggable(document.getElementById('topDock'));
+    makeDraggable(document.getElementById('playbackDock'));
+
     function togglePanel(panelId) { document.querySelectorAll('.popover-panel').forEach(p => { if(p.id !== panelId) p.classList.remove('show'); }); if(panelId) { const panel = document.getElementById(panelId); if(panel) panel.classList.toggle('show'); } }
     document.getElementById('masterCanvas').addEventListener('mousedown', () => togglePanel(null));
     document.getElementById('masterCanvas').addEventListener('touchstart', () => togglePanel(null), {passive:true});
@@ -320,8 +330,27 @@
     const grid = document.getElementById('bioGrid');
     const timeSlider = document.getElementById('timeSlider');
     
-    document.getElementById('up1').onchange = e => { if(e.target.files[0]) { v1.src = URL.createObjectURL(e.target.files[0]); clearDrawings(); togglePanel(null); } };
-    document.getElementById('up2').onchange = e => { if(e.target.files[0]) { v2.src = URL.createObjectURL(e.target.files[0]); togglePanel(null); } };
+    const kssWatermark = new Image();
+    kssWatermark.src = 'kss_coach_192.png';
+
+    // AHORA vT CONTROLA TAMBIÉN LA CÁMARA ('cam')
+    let vT = { v1: {x:0, y:0, s:1}, v2: {x:0, y:0, s:1}, cam: {x:0, y:0, s:1} };
+    
+    function updateVidTransform(id) {
+        const v = (id === 'cam') ? webcam : document.getElementById(id);
+        if (!v || !stage) return;
+        const scaleX = stage.clientWidth / canvas.width;
+        const scaleY = stage.clientHeight / canvas.height;
+        const cssX = vT[id].x * scaleX;
+        const cssY = vT[id].y * scaleY;
+        v.style.transform = `translate(${cssX}px, ${cssY}px) scale(${vT[id].s})`;
+    }
+
+    let globalSpeed = 1.0;
+    function setSpeedTarget(rate) { globalSpeed = parseFloat(rate); v1.playbackRate = globalSpeed; v2.playbackRate = globalSpeed; }
+
+    document.getElementById('up1').onchange = e => { if(e.target.files[0]) { v1.src = URL.createObjectURL(e.target.files[0]); v1.playbackRate = globalSpeed; clearDrawings(); togglePanel(null); } };
+    document.getElementById('up2').onchange = e => { if(e.target.files[0]) { v2.src = URL.createObjectURL(e.target.files[0]); v2.playbackRate = globalSpeed; togglePanel(null); } };
 
     let drawColor = '#00e676'; let drawSize = 4; let currentZoom = 1;
     function setQuickColor(hex, btn) { drawColor = hex; document.documentElement.style.setProperty('--accent', hex); document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tool-btn.active').forEach(b => b.style.boxShadow = `0 0 15px ${hex}`); }
@@ -337,7 +366,7 @@
     function resizeCanvas() { 
         const wrapper = document.getElementById('stageWrapper'); 
         const format = document.getElementById('outFormat').value; 
-        stage.dataset.format = format; // Para activar CSS de vertical/horizontal
+        stage.dataset.format = format; 
         
         const wWidth = wrapper.clientWidth; const wHeight = wrapper.clientHeight; 
         const targetRatio = (format === 'vertical') ? (9/16) : (16/9); const currentRatio = wWidth / wHeight; 
@@ -349,26 +378,25 @@
         
         if(format === 'vertical') { outWidth = 720; outHeight = 1280; } else { outWidth = 1280; outHeight = 720; } 
         recCanvas.width = outWidth; recCanvas.height = outHeight; 
+        
+        updateVidTransform('v1');
+        updateVidTransform('v2');
+        updateVidTransform('cam');
     }
     window.addEventListener('resize', resizeCanvas);
 
     let currentMode = 'single';
-    function setLayout(mode, btn) { 
-        currentMode = mode; 
-        stage.className = `video-stage mode-${mode}`; 
-        document.querySelectorAll('#panel-layout .segmented-control button').forEach(b => b.classList.remove('active')); 
-        btn.classList.add('active'); 
-        resizeCanvas(); 
-    }
+    function setLayout(mode, btn) { currentMode = mode; stage.className = `video-stage mode-${mode}`; document.querySelectorAll('#panel-layout .segmented-control button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); resizeCanvas(); }
 
     let webcamStream = null;
     async function toggleCam() { 
         const layout = document.getElementById('camLayout').value; 
-        stage.dataset.cam = layout; // Controla la UI de la webcam via CSS
+        stage.dataset.cam = layout; 
         
-        if (layout === 'bubble') webcam.className = 'webcam-bubble';
-        else webcam.className = '';
-        
+        webcam.style.left = ''; webcam.style.top = ''; webcam.style.right = ''; webcam.style.bottom = '';
+        if (layout === 'bubble') webcam.className = 'webcam-bubble'; else webcam.className = '';
+        updateVidTransform('cam'); 
+
         if (layout !== 'hidden' && !webcamStream) {
             try { webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); webcam.srcObject = webcamStream; await webcam.play().catch(e=>console.warn(e)); } 
             catch (err) { console.error("Error activando cámara:", err); }
@@ -376,23 +404,39 @@
         resizeCanvas();
     }
 
-    function drawSmartBubble(ctx, camVid, x, y, radius) {
+    function drawSmartBubble(ctx, camVid, x, y, radius, tX=0, tY=0, scale=1) {
         if(!camVid || camVid.videoWidth === 0) return;
         ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
         const camRatio = camVid.videoWidth / camVid.videoHeight; let sW = camVid.videoWidth, sH = camVid.videoHeight, sX = 0, sY = 0;
         if (camRatio > 1) { sW = sH; sX = (camVid.videoWidth - sW) / 2; } else { sH = sW; sY = (camVid.videoHeight - sH) / 2; }
-        try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), Math.floor(x - radius), Math.floor(y - radius), radius * 2, radius * 2); } catch(e){}
-        ctx.restore(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.lineWidth = 6; ctx.strokeStyle = '#00e676'; ctx.stroke();
+        
+        const ratioX = ctx.canvas.width / canvas.width;
+        const ratioY = ctx.canvas.height / canvas.height;
+        ctx.translate(x + (tX * ratioX), y + (tY * ratioY));
+        ctx.scale(scale, scale);
+
+        try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), -radius, -radius, radius * 2, radius * 2); } catch(e){}
+        ctx.restore(); 
+        ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.lineWidth = 6; ctx.strokeStyle = '#00e676'; ctx.stroke();
     }
 
-    function drawContain(srcObj, ctxR, x, y, w, h) { 
+    function drawContain(srcObj, ctxR, boxX, boxY, boxW, boxH, tX=0, tY=0, scale=1) { 
         const sW = srcObj.videoWidth || srcObj.width; const sH = srcObj.videoHeight || srcObj.height;
         if (!sW) return; 
-        const vR = sW / sH, bR = w / h; 
-        let dW, dH, dX, dY; 
-        if (vR > bR) { dW = w; dH = w / vR; dX = x; dY = y + (h - dH) / 2; } 
-        else { dH = h; dW = h * vR; dX = x + (w - dW) / 2; dY = y; } 
-        ctxR.drawImage(srcObj, dX, dY, dW, dH); 
+        const vR = sW / sH, bR = boxW / boxH; 
+        let dW, dH; 
+        if (vR > bR) { dW = boxW; dH = boxW / vR; } 
+        else { dH = boxH; dW = boxH * vR; } 
+        
+        // Conversión matemática para que el encuadre se vea exacto en el video HD final
+        const ratioX = ctxR.canvas.width / canvas.width;
+        const ratioY = ctxR.canvas.height / canvas.height;
+
+        ctxR.save();
+        ctxR.translate(boxX + boxW/2 + (tX * ratioX), boxY + boxH/2 + (tY * ratioY));
+        ctxR.scale(scale, scale);
+        ctxR.drawImage(srcObj, -dW/2, -dH/2, dW, dH);
+        ctxR.restore();
     }
 
     function addMotionStamp() {
@@ -406,109 +450,72 @@
         img.src = tmp.toDataURL('image/png');
     }
 
-    // --- NUEVO MOTOR DE EXPORTACIÓN (Snapshot & Grabación 100% alineados con la UI) ---
     function renderExportFrame(targetCtx, w, h) {
         targetCtx.fillStyle = '#0f172a'; targetCtx.fillRect(0, 0, w, h);
         const camLayout = stage.dataset.cam || 'hidden';
         const format = stage.dataset.format || 'horizontal';
         let vW = w, vH = h, vX = 0, vY = 0;
 
+        // INYECCIÓN DE LA CÁMARA CON ENCUADRE
         if (camLayout === 'split') {
             if (format === 'vertical') {
                 vH = h / 2;
-                if (webcamStream && webcam.readyState >= 2) {
-                    drawContain(webcam, targetCtx, 0, h/2, w, h/2);
-                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(0, h/2 - 1, w, 2);
+                if (webcamStream && webcam.readyState >= 2) { 
+                    drawContain(webcam, targetCtx, 0, h/2, w, h/2, vT.cam.x, vT.cam.y, vT.cam.s); 
+                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(0, h/2 - 1, w, 2); 
                 }
             } else {
                 vW = w / 2;
-                if (webcamStream && webcam.readyState >= 2) {
-                    drawContain(webcam, targetCtx, w/2, 0, w/2, h);
-                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(w/2 - 1, 0, 2, h);
+                if (webcamStream && webcam.readyState >= 2) { 
+                    drawContain(webcam, targetCtx, w/2, 0, w/2, h, vT.cam.x, vT.cam.y, vT.cam.s); 
+                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(w/2 - 1, 0, 2, h); 
                 }
             }
         }
 
         if (currentMode === 'single') {
-            drawContain(v1, targetCtx, vX, vY, vW, vH);
+            drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s);
         } else if (currentMode === 'split') {
-            drawContain(v1, targetCtx, vX, vY, vW/2, vH);
-            drawContain(v2, targetCtx, vX + vW/2, vY, vW/2, vH);
+            drawContain(v1, targetCtx, vX, vY, vW/2, vH, vT.v1.x, vT.v1.y, vT.v1.s);
+            drawContain(v2, targetCtx, vX + vW/2, vY, vW/2, vH, vT.v2.x, vT.v2.y, vT.v2.s);
             targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(vX + vW/2 - 1, vY, 2, vH);
         } else if (currentMode === 'ghost') {
-            drawContain(v1, targetCtx, vX, vY, vW, vH);
+            drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s);
             targetCtx.globalCompositeOperation = "screen"; targetCtx.globalAlpha = 0.5;
-            drawContain(v2, targetCtx, vX, vY, vW, vH);
+            drawContain(v2, targetCtx, vX, vY, vW, vH, vT.v2.x, vT.v2.y, vT.v2.s);
             targetCtx.globalCompositeOperation = "source-over"; targetCtx.globalAlpha = 1.0;
         }
 
-        targetCtx.drawImage(canvas, 0, 0, w, h); // Dibuja la capa de anotaciones que cubre todo
+        targetCtx.drawImage(canvas, 0, 0, w, h); 
 
         if (camLayout === 'bubble' && webcamStream && webcam.readyState >= 2) {
-            const sRect = stage.getBoundingClientRect(); const cRect = webcam.getBoundingClientRect();
-            const pX = (cRect.left - sRect.left) / stage.clientWidth; const pY = (cRect.top - sRect.top) / stage.clientHeight;
-            const bR = (cRect.width / stage.clientWidth) * w / 2; const bX = (pX * w) + bR; const bY = (pY * h) + bR;
-            drawSmartBubble(targetCtx, webcam, bX, bY, bR);
+            const cx = webcam.offsetLeft + (webcam.offsetWidth / 2);
+            const cy = webcam.offsetTop + (webcam.offsetHeight / 2);
+            const pX = cx / stage.clientWidth;
+            const pY = cy / stage.clientHeight;
+            const bR = (webcam.offsetWidth / stage.clientWidth) * w / 2;
+            drawSmartBubble(targetCtx, webcam, pX * w, pY * h, bR, vT.cam.x, vT.cam.y, vT.cam.s);
         }
 
-        targetCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; targetCtx.font = "bold 24px Arial"; targetCtx.fillText("KSS Coach Pro", 20, h - 30);
+        if (kssWatermark.complete && kssWatermark.naturalWidth > 0) {
+            targetCtx.save();
+            targetCtx.globalAlpha = 0.6;
+            const wmWidth = w * (w < h ? 0.18 : 0.12); 
+            const wmHeight = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * wmWidth;
+            targetCtx.drawImage(kssWatermark, w - wmWidth - 20, h - wmHeight - 20, wmWidth, wmHeight);
+            targetCtx.restore();
+        }
     }
 
     let capturedFrames = [];
-    function takeSnapshot() {
-        renderExportFrame(recCtx, outWidth, outHeight);
-        const dataURL = recCanvas.toDataURL('image/png');
-        capturedFrames.push({ id: Date.now(), src: dataURL, selected: false });
-        document.getElementById('snapCount').innerText = capturedFrames.length;
-        const flash = document.getElementById('flashOverlay');
-        flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 100);
-    }
-
-    function openGallery() {
-        const modal = document.getElementById('galleryModal'); const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-        if(capturedFrames.length === 0) { grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún.</p>'; }
-        capturedFrames.forEach((frame, index) => {
-            const div = document.createElement('div'); div.className = `frame-card ${frame.selected ? 'selected' : ''}`;
-            div.onclick = () => toggleSelectFrame(index);
-            div.innerHTML = `<img src="${frame.src}" alt="Frame"><div class="check-icon">✓</div>`;
-            grid.appendChild(div);
-        });
-        renderCompareView(); modal.classList.add('show');
-    }
-
+    function takeSnapshot() { renderExportFrame(recCtx, outWidth, outHeight); const dataURL = recCanvas.toDataURL('image/png'); capturedFrames.push({ id: Date.now(), src: dataURL, selected: false }); document.getElementById('snapCount').innerText = capturedFrames.length; const flash = document.getElementById('flashOverlay'); flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 100); }
+    function openGallery() { const modal = document.getElementById('galleryModal'); const grid = document.getElementById('galleryGrid'); grid.innerHTML = ''; if(capturedFrames.length === 0) { grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún.</p>'; } capturedFrames.forEach((frame, index) => { const div = document.createElement('div'); div.className = `frame-card ${frame.selected ? 'selected' : ''}`; div.onclick = () => toggleSelectFrame(index); div.innerHTML = `<img src="${frame.src}" alt="Frame"><div class="check-icon">✓</div>`; grid.appendChild(div); }); renderCompareView(); modal.classList.add('show'); }
     function closeGallery() { document.getElementById('galleryModal').classList.remove('show'); }
-    
-    function toggleSelectFrame(index) { 
-        const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; 
-        if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } 
-        frame.selected = !frame.selected; openGallery(); 
-    }
-    
+    function toggleSelectFrame(index) { const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } frame.selected = !frame.selected; openGallery(); }
     function deleteSelectedFrames() { capturedFrames = capturedFrames.filter(f => !f.selected); document.getElementById('snapCount').innerText = capturedFrames.length; openGallery(); }
-
-    function renderCompareView() {
-        const view = document.getElementById('compareView'); const btnDownload = document.getElementById('btnDownloadComp'); const btnDelete = document.getElementById('btnDeleteComp');
-        const selected = capturedFrames.filter(f => f.selected); view.innerHTML = '';
-        if (selected.length === 0) { view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; btnDownload.style.display = 'none'; btnDelete.style.display = 'none'; } 
-        else { selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; btnDelete.style.display = 'flex'; }
-    }
-
-    function downloadComparison() {
-        const selected = capturedFrames.filter(f => f.selected); if(selected.length !== 2) return;
-        const compCanvas = document.getElementById('compareCanvas'); const compCtx = compCanvas.getContext('2d');
-        compCanvas.width = outWidth * 2; compCanvas.height = outHeight;
-        const img1 = new Image(); const img2 = new Image(); img1.src = selected[0].src; img2.src = selected[1].src;
-        img1.onload = () => { compCtx.drawImage(img1, 0, 0); img2.onload = () => { compCtx.drawImage(img2, outWidth, 0); const a = document.createElement('a'); a.href = compCanvas.toDataURL('image/png'); a.download = `KSS-Comparacion-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }; };
-    }
-
-    function exportToKSS() {
-        const selected = capturedFrames.filter(f => f.selected); const framesToExport = selected.length > 0 ? selected : [capturedFrames[capturedFrames.length - 1]];
-        if(!framesToExport[0]) { alert("Captura al menos un frame primero usando '📸 Snap'"); return; }
-        const exportData = framesToExport.map(f => f.src);
-        const kssEvent = new CustomEvent('kss-frames-exported', { detail: { frames: exportData } });
-        window.dispatchEvent(kssEvent); if(window.parent !== window) { window.parent.dispatchEvent(kssEvent); }
-        alert(`¡Listo! ${exportData.length} frame(s) exportados.`); closeGallery();
-    }
+    function renderCompareView() { const view = document.getElementById('compareView'); const btnDownload = document.getElementById('btnDownloadComp'); const btnDelete = document.getElementById('btnDeleteComp'); const selected = capturedFrames.filter(f => f.selected); view.innerHTML = ''; if (selected.length === 0) { view.innerHTML = '<p style="color: #475569; font-style: italic;">Selecciona frames arriba para visualizar.</p>'; btnDownload.style.display = 'none'; btnDelete.style.display = 'none'; } else { selected.forEach(frame => { const img = document.createElement('img'); img.src = frame.src; img.className = 'compare-img'; view.appendChild(img); }); btnDownload.style.display = (selected.length === 2) ? 'block' : 'none'; btnDelete.style.display = 'flex'; } }
+    function downloadComparison() { const selected = capturedFrames.filter(f => f.selected); if(selected.length !== 2) return; const compCanvas = document.getElementById('compareCanvas'); const compCtx = compCanvas.getContext('2d'); compCanvas.width = outWidth * 2; compCanvas.height = outHeight; const img1 = new Image(); const img2 = new Image(); img1.src = selected[0].src; img2.src = selected[1].src; img1.onload = () => { compCtx.drawImage(img1, 0, 0); img2.onload = () => { compCtx.drawImage(img2, outWidth, 0); const a = document.createElement('a'); a.href = compCanvas.toDataURL('image/png'); a.download = `KSS-Comparacion-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }; }; }
+    function exportToKSS() { const selected = capturedFrames.filter(f => f.selected); const framesToExport = selected.length > 0 ? selected : [capturedFrames[capturedFrames.length - 1]]; if(!framesToExport[0]) { alert("Captura al menos un frame primero usando '📸 Snap'"); return; } const exportData = framesToExport.map(f => f.src); const kssEvent = new CustomEvent('kss-frames-exported', { detail: { frames: exportData } }); window.dispatchEvent(kssEvent); if(window.parent !== window) { window.parent.dispatchEvent(kssEvent); } alert(`¡Listo! ${exportData.length} frame(s) exportados.`); closeGallery(); }
 
     let isDraggingCam = false, camOffsetX = 0, camOffsetY = 0;
     function startDragCam(e) { if(stage.dataset.cam !== 'bubble') return; isDraggingCam = true; const r = webcam.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; camOffsetX = cx - r.left; camOffsetY = cy - r.top; }
@@ -531,18 +538,20 @@
         if (!isRecording) { 
             try { 
                 await toggleCam(); resizeCanvas(); 
+                
+                renderExportFrame(recCtx, outWidth, outHeight);
+
                 const canvasStream = recCanvas.captureStream(30); 
                 const streamTracks = [...canvasStream.getTracks()];
                 if(webcamStream && stage.dataset.cam !== 'hidden') streamTracks.push(...webcamStream.getAudioTracks());
                 
                 const combinedStream = new MediaStream(streamTracks); 
-                // Añadimos videoBitsPerSecond para evitar problemas de códec que generen videos de 0 bytes
                 let opts = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 2500000 }; 
                 if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/mp4' }; 
                 
                 mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; 
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); }; 
-                mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-StudioCut-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; 
+                mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-VideoAnalysis-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; 
                 mediaRecorder.start(); isRecording = true; btnStart.innerText = "🛑 Detener y Guardar"; btnMain.classList.add('recording'); btnMain.innerText = "🛑 Grabando"; togglePanel(null); 
             } catch (err) { alert("Error al grabar bro: " + err); } 
         } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
@@ -553,8 +562,7 @@
     function getActiveVids() { return targetMode === 'v1' ? [v1] : (targetMode === 'v2' ? [v2] : [v1, v2]); }
     function togglePlayTarget() { const vids = getActiveVids(); if(vids[0].paused) vids.forEach(v => v.play()); else vids.forEach(v => v.pause()); }
     function stepTarget(dir) { getActiveVids().forEach(v => { v.pause(); v.currentTime += dir * (1/30); }); }
-    function setSpeedTarget(rate) { getActiveVids().forEach(v => v.playbackRate = parseFloat(rate)); }
-
+    
     timeSlider.addEventListener('input', e => { const pct = e.target.value / 100; getActiveVids().forEach(v => { if(v.duration) v.currentTime = pct * v.duration; }); });
     function updateSliderUI() { const refVid = (targetMode === 'v2') ? v2 : v1; if(refVid.duration) { timeSlider.value = (refVid.currentTime / refVid.duration) * 100; document.getElementById('timeDisplay').innerText = new Date(refVid.currentTime*1000).toISOString().substr(14,8); } }
     v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
@@ -599,15 +607,27 @@
         }
         if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
 
-        if (isRecording) {
-            renderExportFrame(recCtx, outWidth, outHeight);
+        if (kssWatermark.complete && kssWatermark.naturalWidth > 0) {
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            const sW = canvas.width * (canvas.width < canvas.height ? 0.15 : 0.08);
+            const sH = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * sW;
+            ctx.drawImage(kssWatermark, canvas.width - sW - 15, canvas.height - sH - 15, sW, sH);
+            ctx.restore();
         }
+
+        if (isRecording) { renderExportFrame(recCtx, outWidth, outHeight); }
 
         requestAnimationFrame(renderLoop);
     }
 
     function getCoords(e) { const r = canvas.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; const sX = canvas.width / r.width; const sY = canvas.height / r.height; return { x: (cx - r.left) * sX, y: (cy - r.top) * sY }; }
-    function sDraw(e) { if(e.target.closest('.interactive-ui') || e.target.closest('.jog-dial-container')) return; if(currentTool === 'none') return; const p = getCoords(e); const rt = (targetMode==='v2') ? v2.currentTime : v1.currentTime;
+    
+    function sDraw(e) { 
+        if(e.target.closest('.interactive-ui') || e.target.closest('.jog-dial-container')) return; 
+        if(currentTool === 'none') return; 
+        const p = getCoords(e); const rt = (targetMode==='v2') ? v2.currentTime : v1.currentTime;
+        if (currentTool === 'pan') { isDrawing = true; startX = p.x; startY = p.y; return; }
         if (currentTool === 'timer') { drawings.push({ type: 'timer', time: rt, startTime: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); setTool('none'); return; }
         if (currentTool === 'text') { const txt = prompt("Ingresa el texto:"); if(txt) { drawings.push({ type: 'text', text: txt, time: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); } setTool('none'); return; }
         if (currentTool === 'joint') { if(!currentPath || currentPath.type !== 'joint') { currentPath = { type: 'joint', time: rt, color: drawColor, size: drawSize, points: [p] }; } else { currentPath.points.push(p); if(currentPath.points.length === 3) { drawings.push({...currentPath}); currentPath = null; } } return; }
@@ -617,13 +637,41 @@
         else if(currentTool === 'arrow') currentPath = { type: 'arrow', time: rt, color: drawColor, size: drawSize, fx: startX, fy: startY, tx: startX, ty: startY };
         else if(currentTool === 'mag') currentPath = { type: 'mag', x: startX, y: startY }; 
     }
-    function mDraw(e) { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing || currentTool === 'none') return; e.preventDefault(); const p = getCoords(e); 
+    
+    function mDraw(e) { 
+        if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing || currentTool === 'none') return; 
+        e.preventDefault(); 
+        const p = getCoords(e); 
+        
+        if (currentTool === 'pan') { 
+            const dx = p.x - startX; const dy = p.y - startY; startX = p.x; startY = p.y; 
+            
+            // PANEO INTELIGENTE PARA LA CÁMARA
+            const isSplitCam = stage.dataset.cam === 'split';
+            const format = stage.dataset.format;
+            let pannedCam = false;
+
+            if (isSplitCam) {
+                if (format === 'vertical' && p.y > canvas.height / 2) {
+                    vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true;
+                } else if (format === 'horizontal' && p.x > canvas.width / 2) {
+                    vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true;
+                }
+            }
+
+            if (!pannedCam) {
+                getActiveVids().forEach(v => { vT[v.id].x += dx; vT[v.id].y += dy; updateVidTransform(v.id); }); 
+            }
+            return; 
+        }
+
         if(currentTool === 'draw') currentPath.points.push(p); 
         else if(currentTool === 'circle') currentPath.radius = Math.hypot(p.x - startX, p.y - startY); 
         else if(currentTool === 'arrow') { currentPath.tx = p.x; currentPath.ty = p.y; }
         else if(currentTool === 'mag') { currentPath.x = p.x; currentPath.y = p.y; } 
     }
-    function eDraw() { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing) return; isDrawing = false; if(currentPath && currentTool !== 'mag') { drawings.push(currentPath); } currentPath = null; }
+    
+    function eDraw() { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing) return; isDrawing = false; if(currentPath && currentTool !== 'mag' && currentTool !== 'pan') { drawings.push(currentPath); } currentPath = null; }
     
     canvas.addEventListener('mousedown', sDraw); canvas.addEventListener('mousemove', mDraw); window.addEventListener('mouseup', eDraw);
     canvas.addEventListener('touchstart', sDraw, {passive: false}); canvas.addEventListener('touchmove', mDraw, {passive: false}); window.addEventListener('touchend', eDraw);
@@ -633,19 +681,8 @@
     canvas.addEventListener('touchmove', e => { if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){ const dx=e.touches[0].clientX-tX; if(Math.abs(dx)>15){ isGest=true; e.preventDefault(); const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); getActiveVids().forEach(v => v.currentTime = newT); } } }, {passive:false});
 
     const ui = document.getElementById('uiOverlay'); let uiTimeout;
-    const wakeUpUI = () => {
-        ui.classList.remove('hidden-ui');
-        clearTimeout(uiTimeout);
-        uiTimeout = setTimeout(() => { 
-            if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) {
-                ui.classList.add('hidden-ui'); 
-            }
-        }, 3500);
-    };
-    
-    document.addEventListener('mousemove', wakeUpUI);
-    document.addEventListener('touchstart', wakeUpUI, {passive: true});
-    document.addEventListener('click', wakeUpUI); 
+    const wakeUpUI = () => { ui.classList.remove('hidden-ui'); clearTimeout(uiTimeout); uiTimeout = setTimeout(() => { if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) { ui.classList.add('hidden-ui'); } }, 3500); };
+    document.addEventListener('mousemove', wakeUpUI); document.addEventListener('touchstart', wakeUpUI, {passive: true}); document.addEventListener('click', wakeUpUI); 
     
     toggleCam();
     resizeCanvas(); renderLoop();
