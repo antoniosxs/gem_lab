@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KSS VIDEO ANALYSIS - ProCoach V15.10</title>
+    <title>KSS VIDEO ANALYSIS - ProCoach V15.11</title>
 
     <style>
         :root {
@@ -11,13 +11,17 @@
             --accent: #00e676; --record: #ef4444; --text: #f8fafc;
             --border: rgba(255, 255, 255, 0.1); --active-vid: #0ea5e9;
         }
+        /* FIX RESPONSIVE: Evitar recargas accidentales al deslizar (Pull-to-refresh) */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; overscroll-behavior: none; position: fixed; inset: 0; }
         
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; position: fixed; inset: 0; }
         .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
-        .draggable-panel { cursor: grab; position: absolute; transition: transform 0.2s, box-shadow 0.2s; }
+        /* Transiciones suaves para ocultar UI */
+        .draggable-panel { cursor: grab; position: absolute; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, box-shadow 0.2s; }
         .draggable-panel:active { cursor: grabbing; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+        .ui-hidden { opacity: 0 !important; pointer-events: none !important; transform: scale(0.9) translateY(20px) !important; }
+
         .drag-grip { width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; opacity: 0.4; padding-top: 4px; padding-bottom: 4px;}
         .drag-grip::after { content: ''; width: 30px; height: 4px; background: white; border-radius: 2px; }
 
@@ -70,8 +74,6 @@
 
         .ui-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
         .interactive-ui { pointer-events: auto; }
-        .ui-layer.hidden-ui { opacity: 0; pointer-events: none !important; }
-        .ui-layer.hidden-ui .interactive-ui { pointer-events: none !important; }
         
         .ui-element { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
@@ -87,17 +89,8 @@
         .btn-clear { color: #ef4444; }
         .btn-undo { color: #facc15; }
 
-        @media (max-height: 800px) {
-            .tool-dock { display: grid; grid-template-columns: 40px 40px; overflow-y: auto; max-height: 70vh;}
-            .drag-grip { grid-column: 1 / -1; }
-            .dock-divider { grid-column: 1 / -1; width: 90%; }
-            .quick-colors { flex-direction: row; grid-column: 1 / -1; justify-content: space-around; width: 100%; padding: 0 5px; }
-            .btn-clear, .btn-undo { grid-column: auto; width: 100%; background: rgba(255,255,255,0.05); }
-            .tool-btn#btn-board { grid-column: 1 / -1; width: 100%; }
-        }
-
         .top-pill-dock { top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; padding: 5px; }
-        .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px;}
+        .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px; white-space: nowrap;}
         .pill-btn:hover { background: rgba(255,255,255,0.1); }
         .pill-btn.snapshot { background: #3b82f6; border-color: #60a5fa; }
         .pill-btn.gallery { background: #8b5cf6; border-color: #a78bfa; }
@@ -125,8 +118,6 @@
         .sync-selector { display: flex; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid #334155; }
         .sync-selector button { border: none; background: transparent; color: #94a3b8; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .sync-selector button.active { background: var(--active-vid); color: white; }
-        
-        /* BOTÓN DE LOCK SYNC */
         #btn-lock-sync { font-size: 14px; transition: 0.2s; border-left: 1px solid #334155; padding: 6px 12px;}
         #btn-lock-sync:hover { background: rgba(255,255,255,0.1); }
 
@@ -135,7 +126,6 @@
         .timeline-row { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; flex-wrap: nowrap; }
         .time-display { font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px; color: var(--accent); font-weight: bold;}
         
-        /* ESTILOS NUEVOS PARA EL TIMELINE Y MARCADORES */
         .slider-wrapper { position: relative; flex: 1; display: flex; align-items: center; height: 20px;}
         .timeline-slider { width: 100%; z-index: 2; position: relative; margin: 0; cursor: pointer; accent-color: var(--accent); }
         .markers-container { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 10; }
@@ -168,10 +158,32 @@
         .flash-overlay { position: absolute; inset: 0; background: white; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
         .flash-overlay.flash { opacity: 0.8; }
         
+        /* BOTÓN ZEN (Ocultar UI) */
+        .zen-btn { position: absolute; bottom: 15px; right: 15px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: var(--panel); border: 1px solid var(--border); color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; backdrop-filter: blur(10px); }
+        .zen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        .zen-btn.active { background: var(--accent); color: black; box-shadow: 0 0 15px var(--accent); }
+
+        /* 🔥 REGLAS RESPONSIVE (MÓVIL Y TABLET) */
         @media (max-width: 768px) {
-            .system-brand-header h1 { font-size: 12px; }
-            .system-brand-header img { height: 24px; }
-            .playback-dock { width: 95%; }
+            .system-brand-header { display: none; } /* Ocultar logo en móvil para ahorrar espacio */
+            
+            .tool-dock { top: 10px; left: 10px; flex-direction: row; flex-wrap: wrap; width: calc(100% - 70px); max-height: 110px; overflow-y: auto; padding: 5px; border-radius: 12px; }
+            .drag-grip { display: none; } /* Ocultar agarradera en móvil, los paneles se fijan */
+            .tool-btn { width: 34px; height: 34px; font-size: 16px; }
+            .dock-divider { width: 1px; height: 25px; margin: 0 4px; }
+            .quick-colors { flex-direction: row; margin: 0 5px; }
+            .color-dot { width: 18px; height: 18px; }
+            
+            .top-pill-dock { top: auto; bottom: 80px; left: 10px; right: 10px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px; background: transparent; border: none; box-shadow: none; }
+            .top-pill-dock::-webkit-scrollbar { display: none; }
+            
+            .playback-dock { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-width: 100%; padding: 10px; }
+            .playback-controls { justify-content: center; }
+            .jog-dial-container { display: none; } /* Ocultar rueda giratoria en móvil (difícil de usar en táctil) */
+            
+            .zen-btn { bottom: 130px; right: 15px; } /* Subir botón zen sobre la barra inferior */
+            
+            .popover-panel { width: 90vw; right: 5vw; bottom: 100%; top: auto; transform-origin: bottom center; }
         }
     </style>
 </head>
@@ -190,6 +202,8 @@
     </div>
     <canvas id="recordCanvas"></canvas>
     <canvas id="compareCanvas"></canvas>
+
+    <button id="btnZen" class="zen-btn interactive-ui" onclick="toggleZenMode()" title="Modo Zen (Ocultar Menús)">👁️</button>
 
     <div id="uiOverlay" class="ui-layer">
         
@@ -318,6 +332,20 @@
 </div>
 
 <script>
+    // SISTEMA MODO ZEN
+    let zenMode = false;
+    function toggleZenMode() {
+        zenMode = !zenMode;
+        document.querySelectorAll('.draggable-panel').forEach(p => {
+            if(zenMode) p.classList.add('ui-hidden');
+            else p.classList.remove('ui-hidden');
+        });
+        const btn = document.getElementById('btnZen');
+        btn.innerText = zenMode ? '👀' : '👁️';
+        if(zenMode) btn.classList.add('active');
+        else btn.classList.remove('active');
+    }
+
     function makeDraggable(elmnt) {
         if (!elmnt) return;
         let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -325,6 +353,7 @@
         elmnt.addEventListener('touchstart', dragMouseDown, {passive: false});
 
         function dragMouseDown(e) {
+            if(window.innerWidth <= 768) return; // Desactivar drag and drop en móviles
             if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel') || e.target.classList.contains('time-marker')) return;
             e.preventDefault();
             if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
@@ -380,10 +409,7 @@
     let currentGhostOpacity = 0.5;
     let isBoardActive = false;
     
-    // SISTEMA DE MARCADORES (FASE 2)
     let timelineMarkers = [];
-    
-    // SISTEMA DE SINCRONIZACIÓN SMART SYNC (FASE 2)
     let isSyncLocked = false;
     let syncOffset = 0;
 
@@ -576,8 +602,6 @@
         if(!jogActive) return; 
         const cx = e.touches ? e.touches[0].clientX : e.clientX; 
         const dx = cx - lastJogX; lastJogX = cx; 
-        
-        // JOG DIAL CON SOPORTE PARA SMART SYNC
         if (isSyncLocked && targetMode === 'sync') {
             v1.pause(); v2.pause();
             v1.currentTime += (dx * 0.008);
@@ -614,7 +638,6 @@
         } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
     }
 
-    // LÓGICA DE SMART SYNC (PUNTO CERO)
     function toggleLockSync() {
         isSyncLocked = !isSyncLocked;
         const btn = document.getElementById('btn-lock-sync');
@@ -630,7 +653,6 @@
         }
     }
 
-    // LOOP MAESTRO PARA MANTENER LA SINCRONIZACIÓN PERFECTA SI SE REPRODUCEN JUNTOS
     function lockSyncLoop() {
         if (isSyncLocked && targetMode === 'sync' && !v1.paused) {
             const expectedV2 = v1.currentTime + syncOffset;
@@ -649,7 +671,7 @@
         document.getElementById(`ctrl-${mode}`).classList.add('active'); 
         document.documentElement.style.setProperty('--active-vid', mode === 'sync' ? '#0ea5e9' : (mode === 'v1' ? '#10b981' : '#f59e0b')); 
         updateSliderUI();
-        renderTimelineMarkers(); // REFRESCAR MARCADORES AL CAMBIAR DE VIDEO
+        renderTimelineMarkers();
     }
     
     function getActiveVids() { return targetMode === 'v1' ? [v1] : (targetMode === 'v2' ? [v2] : [v1, v2]); }
@@ -678,7 +700,6 @@
     function updateSliderUI() { const refVid = (targetMode === 'v2') ? v2 : v1; if(refVid.duration) { timeSlider.value = (refVid.currentTime / refVid.duration) * 100; document.getElementById('timeDisplay').innerText = new Date(refVid.currentTime*1000).toISOString().substr(14,8); } }
     v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
 
-    // LÓGICA DE MARCADORES DE TIMELINE
     function addTimelineMarker() {
         const refVid = (targetMode === 'v2') ? v2 : v1;
         if(!refVid.duration) return;
@@ -930,8 +951,6 @@
             if(Math.abs(dx)>15){ 
                 isGest=true; e.preventDefault(); 
                 const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); 
-                
-                // GESTOS TÁCTILES CON SMART SYNC
                 if (isSyncLocked && targetMode === 'sync') {
                     v1.currentTime = newT;
                     v2.currentTime = newT + syncOffset;
@@ -943,7 +962,7 @@
     }, {passive:false});
 
     const ui = document.getElementById('uiOverlay'); let uiTimeout;
-    const wakeUpUI = () => { ui.classList.remove('hidden-ui'); clearTimeout(uiTimeout); uiTimeout = setTimeout(() => { if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) { ui.classList.add('hidden-ui'); } }, 3500); };
+    const wakeUpUI = () => { if(zenMode) return; ui.classList.remove('hidden-ui'); clearTimeout(uiTimeout); uiTimeout = setTimeout(() => { if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) { ui.classList.add('hidden-ui'); } }, 3500); };
     document.addEventListener('mousemove', wakeUpUI); document.addEventListener('touchstart', wakeUpUI, {passive: true}); document.addEventListener('click', wakeUpUI); 
     
     toggleCam(); resizeCanvas(); renderLoop();
