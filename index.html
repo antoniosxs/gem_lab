@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KSS VIDEO ANALYSIS - ProCoach V15.6</title>
+    <title>KSS VIDEO ANALYSIS - ProCoach V15.10</title>
 
     <style>
         :root {
@@ -16,13 +16,11 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; position: fixed; inset: 0; }
         .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
-        /* ZONA DE AGARRE PARA ARRASTRAR (DRAG GRIP) */
         .draggable-panel { cursor: grab; position: absolute; transition: transform 0.2s, box-shadow 0.2s; }
         .draggable-panel:active { cursor: grabbing; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
         .drag-grip { width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; opacity: 0.4; padding-top: 4px; padding-bottom: 4px;}
         .drag-grip::after { content: ''; width: 30px; height: 4px; background: white; border-radius: 2px; }
 
-        /* CABECERA DE MARCA PRINCIPAL */
         .system-brand-header { top: 15px; left: 15px; display: flex; align-items: center; gap: 10px; z-index: 60; padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); border: 1px solid var(--border);}
         .system-brand-header img { height: 32px; width: auto; object-fit: contain; pointer-events: none;}
         .system-brand-header h1 { font-size: 16px; font-weight: 800; color: white; letter-spacing: 1px; text-transform: uppercase; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none;}
@@ -32,7 +30,7 @@
         .video-stage { position: relative; display: flex; background: #000; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9); transform-origin: center center; transition: transform 0.1s; border-radius: 4px; }
         
         .vid-wrapper { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        video { max-width: 100%; max-height: 100%; pointer-events: none; object-fit: contain; transform-origin: center center; }
+        video { width: 100%; height: 100%; pointer-events: none; object-fit: contain; transform-origin: center center; }
         
         .mode-single #wrap1 { width: 100%; height: 100%; }
         .mode-single #wrap2 { display: none; }
@@ -41,7 +39,7 @@
         .mode-split #wrap2 { width: 50%; left: 50%; }
         
         .mode-ghost #wrap1 { width: 100%; height: 100%; }
-        .mode-ghost #wrap2 { width: 100%; height: 100%; opacity: 0.5; mix-blend-mode: screen; }
+        .mode-ghost #wrap2 { width: 100%; height: 100%; opacity: 0.5; mix-blend-mode: screen; transition: opacity 0.2s; }
 
         .video-stage[data-cam="split"] #wrap1 { width: 50%; right: 50%; border-right: 2px solid var(--accent); }
         .video-stage[data-cam="split"].mode-single #wrap1 { width: 50%; right: 50%; border-right: 2px solid var(--accent); }
@@ -87,13 +85,15 @@
         .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
         .color-dot.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
         .btn-clear { color: #ef4444; }
+        .btn-undo { color: #facc15; }
 
         @media (max-height: 800px) {
-            .tool-dock { display: grid; grid-template-columns: 40px 40px; }
+            .tool-dock { display: grid; grid-template-columns: 40px 40px; overflow-y: auto; max-height: 70vh;}
             .drag-grip { grid-column: 1 / -1; }
             .dock-divider { grid-column: 1 / -1; width: 90%; }
             .quick-colors { flex-direction: row; grid-column: 1 / -1; justify-content: space-around; width: 100%; padding: 0 5px; }
-            .btn-clear { grid-column: 1 / -1; width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.5); }
+            .btn-clear, .btn-undo { grid-column: auto; width: 100%; background: rgba(255,255,255,0.05); }
+            .tool-btn#btn-board { grid-column: 1 / -1; width: 100%; }
         }
 
         .top-pill-dock { top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; padding: 5px; }
@@ -105,10 +105,10 @@
         .pill-btn.record.recording { animation: pulseRec 1.5s infinite; }
         @keyframes pulseRec { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
 
-        .popover-panel { position: absolute; top: 100%; right: 0; width: 260px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
+        .popover-panel { position: absolute; top: 100%; right: 0; width: 280px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .popover-panel.show { display: flex; }
-        .panel-title { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 5px; }
+        .panel-title { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 5px; display:block; }
         .panel-group { display: flex; flex-direction: column; gap: 8px; }
         .segmented-control { display: flex; background: rgba(0,0,0,0.5); border-radius: 8px; padding: 3px; width: 100%; }
         .segmented-control button { flex: 1; background: transparent; border: none; color: #94a3b8; padding: 6px 0; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
@@ -118,17 +118,30 @@
         .file-upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; width: 100%; height: 100%; }
         input[type="range"] { flex: 1; accent-color: var(--accent); }
         select.styled-select { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px 10px; border-radius: 6px; width: 100%; font-size: 12px; outline: none;}
+        .panel-row { display: flex; align-items: center; justify-content: space-between; }
 
         .playback-dock { bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; padding: 4px 15px 12px 15px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px; z-index: 55; }
         .playback-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .sync-selector { display: flex; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid #334155; }
         .sync-selector button { border: none; background: transparent; color: #94a3b8; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .sync-selector button.active { background: var(--active-vid); color: white; }
+        
+        /* BOTÓN DE LOCK SYNC */
+        #btn-lock-sync { font-size: 14px; transition: 0.2s; border-left: 1px solid #334155; padding: 6px 12px;}
+        #btn-lock-sync:hover { background: rgba(255,255,255,0.1); }
+
         .play-btn { background: white; color: black; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .step-btn { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; }
         .timeline-row { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; flex-wrap: nowrap; }
-        .timeline-slider { flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer; min-width: 50px; }
         .time-display { font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px; color: var(--accent); font-weight: bold;}
+        
+        /* ESTILOS NUEVOS PARA EL TIMELINE Y MARCADORES */
+        .slider-wrapper { position: relative; flex: 1; display: flex; align-items: center; height: 20px;}
+        .timeline-slider { width: 100%; z-index: 2; position: relative; margin: 0; cursor: pointer; accent-color: var(--accent); }
+        .markers-container { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 10; }
+        .time-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 4px; height: 16px; border-radius: 2px; pointer-events: auto; cursor: pointer; transition: 0.2s; box-shadow: 0 0 5px currentColor;}
+        .time-marker:hover { transform: translate(-50%, -50%) scale(1.5); z-index: 15; }
+
         .zoom-control { display: flex; align-items: center; gap: 8px; margin-left: 5px; border-left: 1px solid #334155; padding-left: 10px; }
         .zoom-slider { width: 60px; accent-color: var(--accent); }
 
@@ -169,8 +182,8 @@
     <div class="stage-wrapper" id="stageWrapper">
         <div id="videoStage" class="video-stage mode-single" data-cam="bubble" data-format="horizontal">
             <div id="bioGrid" class="biomechanic-grid"></div>
-            <div class="vid-wrapper" id="wrap1"><video id="v1" playsinline crossorigin="anonymous" src="https://www.w3schools.com/html/mov_bbb.mp4"></video></div>
-            <div class="vid-wrapper" id="wrap2"><video id="v2" playsinline crossorigin="anonymous"></video></div>
+            <div class="vid-wrapper" id="wrap1"><video id="v1" playsinline></video></div>
+            <div class="vid-wrapper" id="wrap2"><video id="v2" playsinline></video></div>
             <canvas id="masterCanvas"></canvas>
             <video id="webcamVideo" class="webcam-bubble" autoplay muted playsinline></video>
         </div>
@@ -190,14 +203,19 @@
             <button class="tool-btn active" id="btn-none" onclick="setTool('none')" title="Gestos">🖱</button>
             <button class="tool-btn" id="btn-pan" onclick="setTool('pan')" title="Mover Video (Encuadre)" style="color: #a78bfa;">✋</button>
             <div class="dock-divider"></div>
-            <button class="tool-btn" id="btn-draw" onclick="setTool('draw')" title="Trazo">✏️</button>
-            <button class="tool-btn" id="btn-arrow" onclick="setTool('arrow')" title="Vector">↗️</button>
+            <button class="tool-btn" id="btn-draw" onclick="setTool('draw')" title="Trazo Libre">✏️</button>
+            <button class="tool-btn" id="btn-arrow" onclick="setTool('arrow')" title="Vector Dinámico">↗️</button>
+            <button class="tool-btn" id="btn-cross" onclick="setTool('cross')" title="Marca X" style="color: #ef4444;">❌</button>
             <button class="tool-btn" id="btn-circle" onclick="setTool('circle')" title="Articulación">⭕</button>
+            <button class="tool-btn" id="btn-plumb" onclick="setTool('plumb')" title="Línea de Plomada (Gravedad)" style="color: #38bdf8;">⚖️</button>
+            <button class="tool-btn" id="btn-spot" onclick="setTool('spot')" title="Foco (Spotlight)" style="color: #facc15;">🔦</button>
             <button class="tool-btn" id="btn-joint" onclick="setTool('joint')" title="Ángulo">📐</button>
             <button class="tool-btn" id="btn-text" onclick="setTool('text')" title="Texto Rápido">T</button>
             <button class="tool-btn" id="btn-mag" onclick="setTool('mag')" title="Lupa Dinámica" style="color: #60a5fa;">🔎</button>
             <button class="tool-btn" id="btn-timer" onclick="setTool('timer')" title="Cronómetro" style="color: #facc15;">⏱️</button>
             <button class="tool-btn" id="btn-stamp" onclick="addMotionStamp()" title="Estroboscopio (Rastro)" style="color: #c084fc;">👤</button>
+            <div class="dock-divider"></div>
+            <button class="tool-btn" id="btn-board" onclick="toggleBoard()" title="Pizarra Táctica (Oscurecer Fondo)" style="color: #cbd5e1; background: rgba(255,255,255,0.05);">🖍️</button>
             <div class="dock-divider"></div>
             <div class="quick-colors">
                 <button class="color-dot active" style="background:#00e676;" onclick="setQuickColor('#00e676', this)"></button>
@@ -206,6 +224,7 @@
                 <button class="color-dot" style="background:#eab308;" onclick="setQuickColor('#eab308', this)"></button>
             </div>
             <div class="dock-divider"></div>
+            <button class="tool-btn btn-undo" onclick="undoDrawing()" title="Deshacer (Ctrl+Z)">↩️</button>
             <button class="tool-btn btn-clear" onclick="clearDrawings()" title="Limpiar Todo">🗑</button>
         </div>
 
@@ -224,7 +243,15 @@
 
             <div id="panel-layout" class="ui-element popover-panel">
                 <div class="panel-group"><span class="panel-title">Modo de Comparación</span><div class="segmented-control"><button class="active" onclick="setLayout('single', this)">Simple</button><button onclick="setLayout('split', this)">Dual</button><button onclick="setLayout('ghost', this)">Ghost</button></div></div>
+                
+                <div class="panel-group" id="ghostControl" style="display: none; margin-top: 5px;">
+                    <span class="panel-title" style="color:#a78bfa;">Opacidad Ghost V2</span>
+                    <input type="range" id="ghostOpacity" min="0.1" max="0.9" step="0.1" value="0.5" oninput="updateGhostOpacity(this.value)">
+                </div>
+
                 <div class="panel-group" style="margin-top: 5px;"><div class="panel-row"><span style="font-size: 13px;">Cuadrícula Biomecánica</span><input type="checkbox" onchange="toggleGrid(this)" style="accent-color: var(--accent); width: 18px; height: 18px;"></div></div>
+                
+                <div class="panel-group" style="margin-top: 5px;"><div class="panel-row"><span style="font-size: 13px;">Trazos Fijos (No se borran)</span><input type="checkbox" id="pinDrawings" style="accent-color: var(--accent); width: 18px; height: 18px;"></div></div>
                 
                 <div class="panel-group" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
                     <span class="panel-title">Zoom / Encuadre (V1, V2 y CAM)</span>
@@ -249,7 +276,9 @@
             </div>
 
             <div id="panel-studio" class="ui-element popover-panel">
-                <div class="panel-group"><span class="panel-title">Formato de Salida</span><select id="outFormat" class="styled-select" onchange="resizeCanvas()"><option value="horizontal">📺 Horizontal 16:9</option><option value="vertical">📱 Vertical 9:16 (Reel)</option></select></div>
+                <div class="panel-group"><span class="panel-title">Orientación</span><select id="outFormat" class="styled-select" onchange="resizeCanvas()"><option value="horizontal">📺 Horizontal 16:9</option><option value="vertical">📱 Vertical 9:16 (Reel)</option></select></div>
+                <div class="panel-group"><span class="panel-title">Calidad de Grabación</span><select id="exportQuality" class="styled-select" onchange="resizeCanvas()"><option value="720">HD (720p) - Ligero</option><option value="1080" selected>FHD (1080p) - Pro</option><option value="2160">4K UHD - Máxima</option></select></div>
+                
                 <div class="panel-group"><span class="panel-title">Cámara del Coach</span><select id="camLayout" class="styled-select" onchange="toggleCam()"><option value="hidden">Oculta</option><option value="bubble" selected>🫧 Burbuja Flotante</option><option value="split">🎭 Pantalla Dividida</option></select></div>
                 <button onclick="executeRecording()" style="background: var(--record); border: none; color: white; padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer;" id="btnStartRec">🔴 Iniciar Grabación</button>
             </div>
@@ -258,11 +287,24 @@
         <div class="ui-element playback-dock interactive-ui draggable-panel" id="playbackDock">
             <div class="drag-grip"></div>
             <div class="playback-controls">
-                <div class="sync-selector"><button id="ctrl-v1" onclick="setTarget('v1')">V1</button><button id="ctrl-sync" class="active" onclick="setTarget('sync')">SYNC</button><button id="ctrl-v2" onclick="setTarget('v2')">V2</button></div>
-                <div style="display: flex; align-items: center; gap: 15px;"><button class="step-btn" onclick="stepTarget(-1)">⏪</button><button class="play-btn" onclick="togglePlayTarget()">⏯</button><button class="step-btn" onclick="stepTarget(1)">⏩</button><button class="step-btn" id="btnMute" onclick="toggleMute()" style="margin-left: 5px; font-size: 20px;" title="Silenciar / Activar Audio Original">🔊</button></div>
+                <div class="sync-selector">
+                    <button id="ctrl-v1" onclick="setTarget('v1')">V1</button>
+                    <button id="ctrl-sync" class="active" onclick="setTarget('sync')">SYNC</button>
+                    <button id="ctrl-v2" onclick="setTarget('v2')">V2</button>
+                    <button id="btn-lock-sync" onclick="toggleLockSync()" title="Smart Sync: Bloquear desfase actual">🔓</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;"><button class="step-btn" onclick="stepTarget(-1)" title="Anterior (Flecha Izq)">⏪</button><button class="play-btn" onclick="togglePlayTarget()" title="Play/Pausa (Espacio)">⏯</button><button class="step-btn" onclick="stepTarget(1)" title="Siguiente (Flecha Der)">⏩</button><button class="step-btn" id="btnMute" onclick="toggleMute()" style="margin-left: 5px; font-size: 20px;" title="Silenciar / Activar (M)">🔊</button></div>
                 <select class="styled-select" style="width: 75px; background: rgba(0,0,0,0.5); border: none;" onchange="setSpeedTarget(this.value)"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1.0x</option></select>
             </div>
-            <div class="timeline-row"><span class="time-display" id="timeDisplay">00:00.00</span><input type="range" id="timeSlider" class="timeline-slider" min="0" max="100" value="0" step="0.1"><div class="zoom-control"><span>🔍</span><input type="range" id="zoomSlider" class="zoom-slider" min="0.4" max="3" step="0.1" value="1" oninput="updateZoom()"></div></div>
+            <div class="timeline-row">
+                <span class="time-display" id="timeDisplay">00:00.00</span>
+                <button onclick="addTimelineMarker()" title="Añadir Marcador de Tiempo (Usa el color seleccionado)" style="background:transparent; border:none; cursor:pointer; font-size:16px;">🚩</button>
+                <div class="slider-wrapper">
+                    <div id="markersContainer" class="markers-container"></div>
+                    <input type="range" id="timeSlider" class="timeline-slider" min="0" max="100" value="0" step="0.1">
+                </div>
+                <div class="zoom-control"><span>🔍</span><input type="range" id="zoomSlider" class="zoom-slider" min="0.4" max="3" step="0.1" value="1" oninput="updateZoom()"></div>
+            </div>
             <div class="jog-dial-container" id="jogDial" title="Arrastra para mover cuadro a cuadro"><div class="jog-track">|| | | | | | | | | | | | | | | ||</div></div>
         </div>
     </div>
@@ -283,7 +325,7 @@
         elmnt.addEventListener('touchstart', dragMouseDown, {passive: false});
 
         function dragMouseDown(e) {
-            if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel')) return;
+            if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel') || e.target.classList.contains('time-marker')) return;
             e.preventDefault();
             if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
             else { pos3 = e.clientX; pos4 = e.clientY; }
@@ -331,11 +373,20 @@
     const timeSlider = document.getElementById('timeSlider');
     
     const kssWatermark = new Image();
+    kssWatermark.crossOrigin = "anonymous";
     kssWatermark.src = 'kss_coach_192.png';
 
-    // AHORA vT CONTROLA TAMBIÉN LA CÁMARA ('cam')
     let vT = { v1: {x:0, y:0, s:1}, v2: {x:0, y:0, s:1}, cam: {x:0, y:0, s:1} };
+    let currentGhostOpacity = 0.5;
+    let isBoardActive = false;
     
+    // SISTEMA DE MARCADORES (FASE 2)
+    let timelineMarkers = [];
+    
+    // SISTEMA DE SINCRONIZACIÓN SMART SYNC (FASE 2)
+    let isSyncLocked = false;
+    let syncOffset = 0;
+
     function updateVidTransform(id) {
         const v = (id === 'cam') ? webcam : document.getElementById(id);
         if (!v || !stage) return;
@@ -357,15 +408,24 @@
     function updateThickness() { drawSize = parseInt(document.getElementById('lineWidth').value); }
     function updateZoom() { currentZoom = document.getElementById('zoomSlider').value; stage.style.transform = `scale(${currentZoom})`; }
     function toggleGrid(chk) { grid.style.display = chk.checked ? 'block' : 'none'; }
+    function updateGhostOpacity(val) { currentGhostOpacity = parseFloat(val); document.getElementById('wrap2').style.opacity = currentGhostOpacity; }
+    
+    function toggleBoard() { 
+        isBoardActive = !isBoardActive; 
+        const btn = document.getElementById('btn-board'); 
+        if(isBoardActive) { btn.classList.add('active'); btn.style.boxShadow = `0 0 15px #cbd5e1`; } 
+        else { btn.classList.remove('active'); btn.style.boxShadow = 'none'; } 
+    }
 
     let isVideoMuted = false;
     function toggleMute() { isVideoMuted = !isVideoMuted; v1.muted = isVideoMuted; v2.muted = isVideoMuted; document.getElementById('btnMute').innerText = isVideoMuted ? '🔇' : '🔊'; }
 
-    let outWidth = 1280, outHeight = 720;
+    let outWidth = 1920, outHeight = 1080;
     
     function resizeCanvas() { 
         const wrapper = document.getElementById('stageWrapper'); 
         const format = document.getElementById('outFormat').value; 
+        const quality = parseInt(document.getElementById('exportQuality').value);
         stage.dataset.format = format; 
         
         const wWidth = wrapper.clientWidth; const wHeight = wrapper.clientHeight; 
@@ -376,17 +436,28 @@
         
         canvas.width = stage.clientWidth; canvas.height = stage.clientHeight; 
         
-        if(format === 'vertical') { outWidth = 720; outHeight = 1280; } else { outWidth = 1280; outHeight = 720; } 
+        if(format === 'vertical') { 
+            outWidth = (quality === 2160) ? 2160 : (quality === 1080 ? 1080 : 720);
+            outHeight = (quality === 2160) ? 3840 : (quality === 1080 ? 1920 : 1280);
+        } else { 
+            outWidth = (quality === 2160) ? 3840 : (quality === 1080 ? 1920 : 1280);
+            outHeight = (quality === 2160) ? 2160 : (quality === 1080 ? 1080 : 720);
+        } 
         recCanvas.width = outWidth; recCanvas.height = outHeight; 
         
-        updateVidTransform('v1');
-        updateVidTransform('v2');
-        updateVidTransform('cam');
+        updateVidTransform('v1'); updateVidTransform('v2'); updateVidTransform('cam');
     }
     window.addEventListener('resize', resizeCanvas);
 
     let currentMode = 'single';
-    function setLayout(mode, btn) { currentMode = mode; stage.className = `video-stage mode-${mode}`; document.querySelectorAll('#panel-layout .segmented-control button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); resizeCanvas(); }
+    function setLayout(mode, btn) { 
+        currentMode = mode; 
+        stage.className = `video-stage mode-${mode}`; 
+        document.querySelectorAll('#panel-layout .segmented-control button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); 
+        document.getElementById('ghostControl').style.display = (mode === 'ghost') ? 'flex' : 'none';
+        if(mode === 'ghost') updateGhostOpacity(currentGhostOpacity);
+        resizeCanvas(); 
+    }
 
     let webcamStream = null;
     async function toggleCam() { 
@@ -398,8 +469,11 @@
         updateVidTransform('cam'); 
 
         if (layout !== 'hidden' && !webcamStream) {
-            try { webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); webcam.srcObject = webcamStream; await webcam.play().catch(e=>console.warn(e)); } 
-            catch (err) { console.error("Error activando cámara:", err); }
+            try { 
+                webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: { ideal: 1920 }, height: { ideal: 1080 } } }); 
+                webcam.srcObject = webcamStream; 
+                await webcam.play().catch(e=>console.warn(e)); 
+            } catch (err) { console.error("Error activando cámara:", err); }
         }
         resizeCanvas();
     }
@@ -410,10 +484,8 @@
         const camRatio = camVid.videoWidth / camVid.videoHeight; let sW = camVid.videoWidth, sH = camVid.videoHeight, sX = 0, sY = 0;
         if (camRatio > 1) { sW = sH; sX = (camVid.videoWidth - sW) / 2; } else { sH = sW; sY = (camVid.videoHeight - sH) / 2; }
         
-        const ratioX = ctx.canvas.width / canvas.width;
-        const ratioY = ctx.canvas.height / canvas.height;
-        ctx.translate(x + (tX * ratioX), y + (tY * ratioY));
-        ctx.scale(scale, scale);
+        const ratioX = ctx.canvas.width / canvas.width; const ratioY = ctx.canvas.height / canvas.height;
+        ctx.translate(x + (tX * ratioX), y + (tY * ratioY)); ctx.scale(scale, scale);
 
         try { ctx.drawImage(camVid, Math.floor(sX), Math.floor(sY), Math.floor(sW), Math.floor(sH), -radius, -radius, radius * 2, radius * 2); } catch(e){}
         ctx.restore(); 
@@ -425,12 +497,9 @@
         if (!sW) return; 
         const vR = sW / sH, bR = boxW / boxH; 
         let dW, dH; 
-        if (vR > bR) { dW = boxW; dH = boxW / vR; } 
-        else { dH = boxH; dW = boxH * vR; } 
+        if (vR > bR) { dW = boxW; dH = boxW / vR; } else { dH = boxH; dW = boxH * vR; } 
         
-        // Conversión matemática para que el encuadre se vea exacto en el video HD final
-        const ratioX = ctxR.canvas.width / canvas.width;
-        const ratioY = ctxR.canvas.height / canvas.height;
+        const ratioX = ctxR.canvas.width / canvas.width; const ratioY = ctxR.canvas.height / canvas.height;
 
         ctxR.save();
         ctxR.translate(boxX + boxW/2 + (tX * ratioX), boxY + boxH/2 + (tY * ratioY));
@@ -442,66 +511,42 @@
     function addMotionStamp() {
         const refVid = (targetMode==='v2') ? v2 : v1;
         if (!refVid || refVid.videoWidth === 0) return;
-        const tmp = document.createElement('canvas');
-        tmp.width = refVid.videoWidth; tmp.height = refVid.videoHeight;
+        const tmp = document.createElement('canvas'); tmp.width = refVid.videoWidth; tmp.height = refVid.videoHeight;
         tmp.getContext('2d').drawImage(refVid, 0, 0);
-        const img = new Image();
-        img.onload = () => { drawings.push({ type: 'stamp', img: img, time: refVid.currentTime }); };
-        img.src = tmp.toDataURL('image/png');
+        const img = new Image(); img.onload = () => { drawings.push({ type: 'stamp', img: img, time: refVid.currentTime }); }; img.src = tmp.toDataURL('image/png');
     }
 
     function renderExportFrame(targetCtx, w, h) {
         targetCtx.fillStyle = '#0f172a'; targetCtx.fillRect(0, 0, w, h);
-        const camLayout = stage.dataset.cam || 'hidden';
-        const format = stage.dataset.format || 'horizontal';
+        const camLayout = stage.dataset.cam || 'hidden'; const format = stage.dataset.format || 'horizontal';
         let vW = w, vH = h, vX = 0, vY = 0;
 
-        // INYECCIÓN DE LA CÁMARA CON ENCUADRE
         if (camLayout === 'split') {
             if (format === 'vertical') {
                 vH = h / 2;
-                if (webcamStream && webcam.readyState >= 2) { 
-                    drawContain(webcam, targetCtx, 0, h/2, w, h/2, vT.cam.x, vT.cam.y, vT.cam.s); 
-                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(0, h/2 - 1, w, 2); 
-                }
+                if (webcamStream && webcam.readyState >= 2) { drawContain(webcam, targetCtx, 0, h/2, w, h/2, vT.cam.x, vT.cam.y, vT.cam.s); targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(0, h/2 - 1, w, 2); }
             } else {
                 vW = w / 2;
-                if (webcamStream && webcam.readyState >= 2) { 
-                    drawContain(webcam, targetCtx, w/2, 0, w/2, h, vT.cam.x, vT.cam.y, vT.cam.s); 
-                    targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(w/2 - 1, 0, 2, h); 
-                }
+                if (webcamStream && webcam.readyState >= 2) { drawContain(webcam, targetCtx, w/2, 0, w/2, h, vT.cam.x, vT.cam.y, vT.cam.s); targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(w/2 - 1, 0, 2, h); }
             }
         }
 
-        if (currentMode === 'single') {
-            drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s);
-        } else if (currentMode === 'split') {
-            drawContain(v1, targetCtx, vX, vY, vW/2, vH, vT.v1.x, vT.v1.y, vT.v1.s);
-            drawContain(v2, targetCtx, vX + vW/2, vY, vW/2, vH, vT.v2.x, vT.v2.y, vT.v2.s);
-            targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(vX + vW/2 - 1, vY, 2, vH);
-        } else if (currentMode === 'ghost') {
-            drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s);
-            targetCtx.globalCompositeOperation = "screen"; targetCtx.globalAlpha = 0.5;
-            drawContain(v2, targetCtx, vX, vY, vW, vH, vT.v2.x, vT.v2.y, vT.v2.s);
-            targetCtx.globalCompositeOperation = "source-over"; targetCtx.globalAlpha = 1.0;
-        }
+        if (currentMode === 'single') { drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s); } 
+        else if (currentMode === 'split') { drawContain(v1, targetCtx, vX, vY, vW/2, vH, vT.v1.x, vT.v1.y, vT.v1.s); drawContain(v2, targetCtx, vX + vW/2, vY, vW/2, vH, vT.v2.x, vT.v2.y, vT.v2.s); targetCtx.fillStyle = '#00e676'; targetCtx.fillRect(vX + vW/2 - 1, vY, 2, vH); } 
+        else if (currentMode === 'ghost') { drawContain(v1, targetCtx, vX, vY, vW, vH, vT.v1.x, vT.v1.y, vT.v1.s); targetCtx.globalCompositeOperation = "screen"; targetCtx.globalAlpha = currentGhostOpacity; drawContain(v2, targetCtx, vX, vY, vW, vH, vT.v2.x, vT.v2.y, vT.v2.s); targetCtx.globalCompositeOperation = "source-over"; targetCtx.globalAlpha = 1.0; }
 
         targetCtx.drawImage(canvas, 0, 0, w, h); 
 
         if (camLayout === 'bubble' && webcamStream && webcam.readyState >= 2) {
-            const cx = webcam.offsetLeft + (webcam.offsetWidth / 2);
-            const cy = webcam.offsetTop + (webcam.offsetHeight / 2);
-            const pX = cx / stage.clientWidth;
-            const pY = cy / stage.clientHeight;
+            const cx = webcam.offsetLeft + (webcam.offsetWidth / 2); const cy = webcam.offsetTop + (webcam.offsetHeight / 2);
+            const pX = cx / stage.clientWidth; const pY = cy / stage.clientHeight;
             const bR = (webcam.offsetWidth / stage.clientWidth) * w / 2;
             drawSmartBubble(targetCtx, webcam, pX * w, pY * h, bR, vT.cam.x, vT.cam.y, vT.cam.s);
         }
 
         if (kssWatermark.complete && kssWatermark.naturalWidth > 0) {
-            targetCtx.save();
-            targetCtx.globalAlpha = 0.6;
-            const wmWidth = w * (w < h ? 0.18 : 0.12); 
-            const wmHeight = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * wmWidth;
+            targetCtx.save(); targetCtx.globalAlpha = 0.6;
+            const wmWidth = w * (w < h ? 0.18 : 0.12); const wmHeight = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * wmWidth;
             targetCtx.drawImage(kssWatermark, w - wmWidth - 20, h - wmHeight - 20, wmWidth, wmHeight);
             targetCtx.restore();
         }
@@ -527,7 +572,20 @@
     let jogActive = false, lastJogX = 0;
     const jogDial = document.getElementById('jogDial');
     const startJog = (e) => { jogActive = true; lastJogX = e.touches ? e.touches[0].clientX : e.clientX; e.preventDefault(); };
-    const moveJog = (e) => { if(!jogActive) return; const cx = e.touches ? e.touches[0].clientX : e.clientX; const dx = cx - lastJogX; lastJogX = cx; getActiveVids().forEach(v => { v.pause(); v.currentTime += (dx * 0.008); }); };
+    const moveJog = (e) => { 
+        if(!jogActive) return; 
+        const cx = e.touches ? e.touches[0].clientX : e.clientX; 
+        const dx = cx - lastJogX; lastJogX = cx; 
+        
+        // JOG DIAL CON SOPORTE PARA SMART SYNC
+        if (isSyncLocked && targetMode === 'sync') {
+            v1.pause(); v2.pause();
+            v1.currentTime += (dx * 0.008);
+            v2.currentTime = v1.currentTime + syncOffset;
+        } else {
+            getActiveVids().forEach(v => { v.pause(); v.currentTime += (dx * 0.008); }); 
+        }
+    };
     const endJog = () => { jogActive = false; };
     jogDial.addEventListener('mousedown', startJog); window.addEventListener('mousemove', moveJog); window.addEventListener('mouseup', endJog);
     jogDial.addEventListener('touchstart', startJog, {passive:false}); window.addEventListener('touchmove', moveJog, {passive:false}); window.addEventListener('touchend', endJog);
@@ -538,7 +596,6 @@
         if (!isRecording) { 
             try { 
                 await toggleCam(); resizeCanvas(); 
-                
                 renderExportFrame(recCtx, outWidth, outHeight);
 
                 const canvasStream = recCanvas.captureStream(30); 
@@ -546,7 +603,7 @@
                 if(webcamStream && stage.dataset.cam !== 'hidden') streamTracks.push(...webcamStream.getAudioTracks());
                 
                 const combinedStream = new MediaStream(streamTracks); 
-                let opts = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 2500000 }; 
+                let opts = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: document.getElementById('exportQuality').value == '2160' ? 8000000 : 3500000 }; 
                 if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/mp4' }; 
                 
                 mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; 
@@ -557,42 +614,223 @@
         } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
     }
 
+    // LÓGICA DE SMART SYNC (PUNTO CERO)
+    function toggleLockSync() {
+        isSyncLocked = !isSyncLocked;
+        const btn = document.getElementById('btn-lock-sync');
+        if (isSyncLocked) {
+            syncOffset = v2.currentTime - v1.currentTime;
+            btn.innerText = '🔒';
+            btn.style.color = '#00e676';
+            btn.title = 'Smart Sync Activado';
+        } else {
+            btn.innerText = '🔓';
+            btn.style.color = '#94a3b8';
+            btn.title = 'Smart Sync: Bloquear desfase actual';
+        }
+    }
+
+    // LOOP MAESTRO PARA MANTENER LA SINCRONIZACIÓN PERFECTA SI SE REPRODUCEN JUNTOS
+    function lockSyncLoop() {
+        if (isSyncLocked && targetMode === 'sync' && !v1.paused) {
+            const expectedV2 = v1.currentTime + syncOffset;
+            if (Math.abs(v2.currentTime - expectedV2) > 0.15) {
+                v2.currentTime = expectedV2;
+            }
+        }
+        requestAnimationFrame(lockSyncLoop);
+    }
+    lockSyncLoop();
+
     let targetMode = 'sync';
-    function setTarget(mode) { targetMode = mode; document.querySelectorAll('.sync-selector button').forEach(b => b.classList.remove('active')); document.getElementById(`ctrl-${mode}`).classList.add('active'); document.documentElement.style.setProperty('--active-vid', mode === 'sync' ? '#0ea5e9' : (mode === 'v1' ? '#10b981' : '#f59e0b')); updateSliderUI(); }
+    function setTarget(mode) { 
+        targetMode = mode; 
+        document.querySelectorAll('.sync-selector button').forEach(b => b.classList.remove('active')); 
+        document.getElementById(`ctrl-${mode}`).classList.add('active'); 
+        document.documentElement.style.setProperty('--active-vid', mode === 'sync' ? '#0ea5e9' : (mode === 'v1' ? '#10b981' : '#f59e0b')); 
+        updateSliderUI();
+        renderTimelineMarkers(); // REFRESCAR MARCADORES AL CAMBIAR DE VIDEO
+    }
+    
     function getActiveVids() { return targetMode === 'v1' ? [v1] : (targetMode === 'v2' ? [v2] : [v1, v2]); }
     function togglePlayTarget() { const vids = getActiveVids(); if(vids[0].paused) vids.forEach(v => v.play()); else vids.forEach(v => v.pause()); }
-    function stepTarget(dir) { getActiveVids().forEach(v => { v.pause(); v.currentTime += dir * (1/30); }); }
     
-    timeSlider.addEventListener('input', e => { const pct = e.target.value / 100; getActiveVids().forEach(v => { if(v.duration) v.currentTime = pct * v.duration; }); });
+    function stepTarget(dir) { 
+        if (isSyncLocked && targetMode === 'sync') {
+            v1.pause(); v2.pause();
+            v1.currentTime += dir * (1/30);
+            v2.currentTime = v1.currentTime + syncOffset;
+        } else {
+            getActiveVids().forEach(v => { v.pause(); v.currentTime += dir * (1/30); }); 
+        }
+    }
+    
+    timeSlider.addEventListener('input', e => { 
+        const pct = e.target.value / 100; 
+        if (isSyncLocked && targetMode === 'sync') {
+            if(v1.duration) v1.currentTime = pct * v1.duration;
+            v2.currentTime = v1.currentTime + syncOffset;
+        } else {
+            getActiveVids().forEach(v => { if(v.duration) v.currentTime = pct * v.duration; }); 
+        }
+    });
+
     function updateSliderUI() { const refVid = (targetMode === 'v2') ? v2 : v1; if(refVid.duration) { timeSlider.value = (refVid.currentTime / refVid.duration) * 100; document.getElementById('timeDisplay').innerText = new Date(refVid.currentTime*1000).toISOString().substr(14,8); } }
     v1.addEventListener('timeupdate', () => { if(targetMode !== 'v2') updateSliderUI(); }); v2.addEventListener('timeupdate', () => { if(targetMode === 'v2') updateSliderUI(); });
 
-    let currentTool = 'none', drawings = [], currentPath = null, isDrawing = false, startX=0, startY=0;
-    function setTool(tool) { currentTool = tool; document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"]):not([onclick^="addMotionStamp"])').forEach(b => { b.classList.remove('active'); b.style.boxShadow='none';}); const btn=document.getElementById(`btn-${tool}`); btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; togglePanel(null); }
-    function clearDrawings() { drawings = []; currentPath = null; }
+    // LÓGICA DE MARCADORES DE TIMELINE
+    function addTimelineMarker() {
+        const refVid = (targetMode === 'v2') ? v2 : v1;
+        if(!refVid.duration) return;
+        timelineMarkers.push({ vidId: refVid.id, time: refVid.currentTime, color: drawColor });
+        renderTimelineMarkers();
+    }
 
-    function drawLivingArrow(c, fx, fy, tx, ty, color, size, isLive) { const head = size * 4; const angle = Math.atan2(ty - fy, tx - fx); const distance = Math.hypot(tx - fx, ty - fy); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.beginPath(); if(isLive && distance > 20) { c.setLineDash([15, 10]); c.lineDashOffset = -(Date.now() / 20); } else c.setLineDash([]); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx - head*Math.cos(angle-Math.PI/6), ty - head*Math.sin(angle-Math.PI/6)); c.lineTo(tx - head*Math.cos(angle+Math.PI/6), ty - head*Math.sin(angle+Math.PI/6)); c.closePath(); c.fill(); }
-    function drawLivingCircle(c, x, y, r, color, size, isLive) { c.strokeStyle = color; c.lineWidth = size; c.beginPath(); c.arc(x, y, r, 0, 2*Math.PI); c.stroke(); c.beginPath(); c.moveTo(x - r/2, y); c.lineTo(x + r/2, y); c.moveTo(x, y - r/2); c.lineTo(x, y + r/2); c.stroke(); if(isLive && r > 10) { const now = Date.now() / 500; c.setLineDash([5, 15]); c.lineWidth = size / 2; c.beginPath(); c.arc(x, y, r + size*2, now, now + Math.PI*2); c.stroke(); c.setLineDash([]); } }
-    function drawJointAngle(c, pts, color, size) { if(pts.length === 0) return; c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for(let i=1; i<pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke(); pts.forEach(p => { c.beginPath(); c.arc(p.x, p.y, size*1.5, 0, Math.PI*2); c.fill(); }); if(pts.length === 3) { const p1 = pts[0], p2 = pts[1], p3 = pts[2]; const a1 = Math.atan2(p1.y - p2.y, p1.x - p2.x); const a2 = Math.atan2(p3.y - p2.y, p3.x - p2.x); let angle = a2 - a1; if (angle < 0) angle += 2 * Math.PI; const arcRadius = 30 + size*2; c.beginPath(); c.moveTo(p2.x, p2.y); c.arc(p2.x, p2.y, arcRadius, a1, a1 + angle); c.closePath(); c.fillStyle = color.replace(')', ', 0.3)').replace('rgb', 'rgba'); if(color.startsWith('#')) c.fillStyle = color + '40'; c.fill(); const deg = Math.round((angle * 180) / Math.PI); const midAngle = a1 + (angle / 2); c.font = `bold ${Math.max(16, size*3)}px Arial`; c.fillStyle = 'white'; c.shadowColor = 'black'; c.shadowBlur = 4; c.fillText(`${deg > 180 ? 360 - deg : deg}°`, p2.x + Math.cos(midAngle) * (arcRadius + 20) - 10, p2.y + Math.sin(midAngle) * (arcRadius + 20) + 5); c.shadowBlur = 0; } }
+    function renderTimelineMarkers() {
+        const container = document.getElementById('markersContainer');
+        container.innerHTML = '';
+        const refVid = (targetMode === 'v2') ? v2 : v1;
+        if(!refVid.duration) return;
+        
+        timelineMarkers.filter(m => m.vidId === refVid.id).forEach(m => {
+            const pct = (m.time / refVid.duration) * 100;
+            const el = document.createElement('div');
+            el.className = 'time-marker';
+            el.style.left = `${pct}%`;
+            el.style.backgroundColor = m.color;
+            el.style.boxShadow = `0 0 8px ${m.color}`;
+            el.title = "Doble clic para eliminar";
+            
+            el.onclick = (e) => { 
+                e.stopPropagation(); 
+                if (isSyncLocked && targetMode === 'sync') {
+                    if (refVid.id === 'v1') {
+                        v1.currentTime = m.time;
+                        v2.currentTime = v1.currentTime + syncOffset;
+                    }
+                } else {
+                    refVid.currentTime = m.time; 
+                }
+            };
+            el.ondblclick = (e) => { 
+                e.stopPropagation(); 
+                timelineMarkers = timelineMarkers.filter(x => x !== m); 
+                renderTimelineMarkers(); 
+            };
+            container.appendChild(el);
+        });
+    }
+
+    let currentTool = 'none', drawings = [], currentPath = null, isDrawing = false, startX=0, startY=0;
+    
+    function setTool(tool) { 
+        currentTool = tool; 
+        document.querySelectorAll('.tool-dock .tool-btn:not([onclick^="clearDrawings"]):not([onclick^="undoDrawing"]):not([onclick^="addMotionStamp"]):not([onclick^="toggleBoard"])').forEach(b => { 
+            b.classList.remove('active'); b.style.boxShadow='none';
+        }); 
+        const btn=document.getElementById(`btn-${tool}`); 
+        if(btn){ btn.classList.add('active'); btn.style.boxShadow=`0 0 15px ${drawColor}`; }
+        togglePanel(null); 
+    }
+    
+    function clearDrawings() { drawings = []; currentPath = null; }
+    function undoDrawing() { if(drawings.length > 0) drawings.pop(); }
+
+    function drawLivingArrow(c, fx, fy, tx, ty, color, size, isLive) { 
+        const head = size * 4; const angle = Math.atan2(ty - fy, tx - fx); const distance = Math.hypot(tx - fx, ty - fy); 
+        c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.shadowColor = color; c.shadowBlur = isLive ? 10 : 0;
+        c.beginPath(); 
+        if(isLive && distance > 20) { c.setLineDash([20, 15]); c.lineDashOffset = -(Date.now() / 15); } else c.setLineDash([]); 
+        c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); 
+        c.setLineDash([]); c.beginPath(); 
+        let pulse = isLive ? (Math.sin(Date.now() / 150) * 2) : 0;
+        c.moveTo(tx, ty); c.lineTo(tx - (head+pulse)*Math.cos(angle-Math.PI/6), ty - (head+pulse)*Math.sin(angle-Math.PI/6)); c.lineTo(tx - (head+pulse)*Math.cos(angle+Math.PI/6), ty - (head+pulse)*Math.sin(angle+Math.PI/6)); 
+        c.closePath(); c.fill(); c.shadowBlur = 0;
+    }
+    
+    function drawLivingCircle(c, x, y, r, color, size, isLive) { 
+        c.strokeStyle = color; c.lineWidth = size; c.shadowColor = color; c.shadowBlur = isLive ? 10 : 0;
+        c.beginPath(); c.arc(x, y, r, 0, 2*Math.PI); c.stroke(); 
+        c.beginPath(); c.moveTo(x - r/2, y); c.lineTo(x + r/2, y); c.moveTo(x, y - r/2); c.lineTo(x, y + r/2); c.stroke(); 
+        if(isLive && r > 10) { 
+            const now = Date.now() / 300; c.setLineDash([8, 12]); c.lineWidth = size / 2; 
+            c.beginPath(); c.arc(x, y, r + size*2.5, now, now + Math.PI*1.8); c.stroke(); c.setLineDash([]); 
+        } c.shadowBlur = 0;
+    }
+
+    function drawCross(c, x, y, sizeLine, color) {
+        const s = 25 + sizeLine*2; c.strokeStyle = color; c.lineWidth = Math.max(4, sizeLine * 1.5); c.lineCap = 'round';
+        c.shadowColor = color; c.shadowBlur = 10;
+        c.beginPath(); c.moveTo(x - s, y - s); c.lineTo(x + s, y + s); c.moveTo(x + s, y - s); c.lineTo(x - s, y + s); c.stroke();
+        c.shadowBlur = 0;
+    }
+
+    function drawJointAngle(c, pts, color, size) { 
+        if(pts.length === 0) return; c.strokeStyle = color; c.fillStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.lineJoin = 'round'; 
+        c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for(let i=1; i<pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke(); 
+        pts.forEach(p => { c.beginPath(); c.arc(p.x, p.y, size*1.5, 0, Math.PI*2); c.fill(); }); 
+        if(pts.length === 3) { 
+            const p1 = pts[0], p2 = pts[1], p3 = pts[2]; const a1 = Math.atan2(p1.y - p2.y, p1.x - p2.x); const a2 = Math.atan2(p3.y - p2.y, p3.x - p2.x); 
+            let angle = a2 - a1; if (angle < 0) angle += 2 * Math.PI; const arcRadius = 30 + size*2; 
+            c.beginPath(); c.moveTo(p2.x, p2.y); c.arc(p2.x, p2.y, arcRadius, a1, a1 + angle); c.closePath(); 
+            c.fillStyle = color.replace(')', ', 0.3)').replace('rgb', 'rgba'); if(color.startsWith('#')) c.fillStyle = color + '40'; c.fill(); 
+            const deg = Math.round((angle * 180) / Math.PI); const midAngle = a1 + (angle / 2); c.font = `bold ${Math.max(16, size*3)}px Arial`; 
+            c.fillStyle = 'white'; c.shadowColor = 'black'; c.shadowBlur = 4; c.fillText(`${deg > 180 ? 360 - deg : deg}°`, p2.x + Math.cos(midAngle) * (arcRadius + 20) - 10, p2.y + Math.sin(midAngle) * (arcRadius + 20) + 5); c.shadowBlur = 0; 
+        } 
+    }
+    
+    function drawPlumbLine(c, x, y, endY, color, size, isLive) {
+        c.strokeStyle = color; c.lineWidth = size; c.lineCap = 'round'; c.shadowColor = color; c.shadowBlur = isLive ? 10 : 0;
+        c.beginPath();
+        if(isLive && Math.abs(endY - y) > 20) { c.setLineDash([10, 10]); c.lineDashOffset = -(Date.now() / 20); } else c.setLineDash([]);
+        c.moveTo(x, y); c.lineTo(x, endY); c.stroke(); c.setLineDash([]);
+        c.beginPath(); c.moveTo(x, endY); c.lineTo(x - size*2.5, endY - size*4); c.lineTo(x + size*2.5, endY - size*4); c.closePath();
+        c.fillStyle = color; c.fill(); c.shadowBlur = 0;
+    }
+
+    function drawSpotlight(c, x, y, r, alpha) {
+        if (r < 5) return;
+        c.save();
+        c.fillStyle = `rgba(0,0,0,${0.85 * alpha})`; c.fillRect(0, 0, c.canvas.width, c.canvas.height);
+        c.globalCompositeOperation = 'destination-out';
+        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = 'black'; c.fill();
+        c.globalCompositeOperation = 'source-over';
+        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.lineWidth = 4; c.strokeStyle = `rgba(252, 211, 77, ${alpha})`;
+        c.shadowColor = '#facc15'; c.shadowBlur = 20; c.stroke();
+        c.restore();
+    }
+
     function drawTimer(c, x, y, startTime, currentTime, color, size) { let diff = currentTime - startTime; if(diff < 0) diff = 0; const text = new Date(diff * 1000).toISOString().substr(14, 8); c.font = `bold ${Math.max(20, size*5)}px monospace`; c.fillStyle = color; c.shadowColor = 'black'; c.shadowBlur = 8; const w = c.measureText(text).width; c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(x - 10, y - 30, w + 20, 40); c.fillStyle = color; c.fillText(text, x, y); c.shadowBlur = 0; }
+    
     function drawMagnifier(c, x, y, videoObj, cW, cH) { if (!videoObj || videoObj.videoWidth === 0) return; const radius = 60; const zoomLevel = 2.5; c.save(); c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 15; c.lineWidth = 4; c.strokeStyle = drawColor; c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.stroke(); c.shadowBlur = 0; c.clip(); const vR = videoObj.videoWidth / videoObj.videoHeight; const bR = cW / cH; let dW, dH, dX = 0, dY = 0; if (vR > bR) { dW = cW; dH = cW / vR; dY = (cH - dH) / 2; } else { dH = cH; dW = cH * vR; dX = (cW - dW) / 2; } const relX = x - dX; const relY = y - dY; const srcX = (relX / dW) * videoObj.videoWidth; const srcY = (relY / dH) * videoObj.videoHeight; const sW = videoObj.videoWidth / zoomLevel; const sH = videoObj.videoHeight / zoomLevel; c.drawImage(videoObj, srcX - (sW / 2), srcY - (sH / 2), sW, sH, 0, 0, cW, cH ); c.beginPath(); c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1; c.moveTo(x - radius, y); c.lineTo(x + radius, y); c.moveTo(x, y - radius); c.lineTo(x, y + radius); c.stroke(); c.restore(); }
 
     function renderLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (isBoardActive) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
         const refVid = (targetMode==='v2') ? v2 : v1; const cTime = refVid.currentTime; 
+        const isPinned = document.getElementById('pinDrawings').checked;
 
         drawings.forEach(d => {
-            const maxTime = (d.type === 'timer') ? 10 : (d.type === 'stamp' ? 8 : 3.5); 
+            const maxTime = d.type === 'timer' ? 10 : (d.type === 'stamp' ? 8 : (d.type === 'spot' ? 5 : 3.5)); 
             const diff = cTime - d.time;
-            if (diff >= 0 && diff <= maxTime) { 
-                const alpha = 1 - (diff / maxTime); let r=0, g=230, b=118; 
+            
+            if (isPinned || (diff >= 0 && diff <= maxTime)) { 
+                const alpha = isPinned ? 1 : (1 - (diff / maxTime)); let r=0, g=230, b=118; 
                 if(d.color && /^#([A-Fa-f0-9]{3}){1,2}$/.test(d.color)){ let c= d.color.substring(1).split(''); if(c.length==3) c=[c[0],c[0],c[1],c[1],c[2],c[2]]; c='0x'+c.join(''); r=(c>>16)&255; g=(c>>8)&255; b=c&255; }
                 const currentColor = `rgba(${r}, ${g}, ${b}, ${d.type === 'timer' ? 1 : alpha})`; 
                 
-                if (d.type === 'draw') { ctx.strokeStyle = currentColor; ctx.lineWidth = d.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(d.points[0].x, d.points[0].y); d.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); }
-                else if (d.type === 'circle') drawLivingCircle(ctx, d.x, d.y, d.radius, currentColor, d.size, true);
-                else if (d.type === 'arrow') drawLivingArrow(ctx, d.fx, d.fy, d.tx, d.ty, currentColor, d.size, true);
+                if (d.type === 'draw') { ctx.strokeStyle = currentColor; ctx.lineWidth = d.size; ctx.lineCap = 'round'; ctx.shadowColor = currentColor; ctx.shadowBlur = isPinned ? 0 : 5; ctx.beginPath(); ctx.moveTo(d.points[0].x, d.points[0].y); d.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); ctx.shadowBlur = 0;}
+                else if (d.type === 'circle') drawLivingCircle(ctx, d.x, d.y, d.radius, currentColor, d.size, !isPinned);
+                else if (d.type === 'arrow') drawLivingArrow(ctx, d.fx, d.fy, d.tx, d.ty, currentColor, d.size, !isPinned);
+                else if (d.type === 'cross') drawCross(ctx, d.x, d.y, d.size, currentColor);
                 else if (d.type === 'joint') drawJointAngle(ctx, d.points, currentColor, d.size);
+                else if (d.type === 'plumb') drawPlumbLine(ctx, d.x, d.y, d.endY, currentColor, d.size, !isPinned);
+                else if (d.type === 'spot') drawSpotlight(ctx, d.x, d.y, d.radius, alpha);
                 else if (d.type === 'timer') drawTimer(ctx, d.x, d.y, d.startTime, cTime, d.color, d.size);
                 else if (d.type === 'stamp') { ctx.globalAlpha = alpha * 0.6; drawContain(d.img, ctx, 0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1.0; }
                 else if (d.type === 'text') { ctx.font = `bold ${Math.max(20, d.size*5)}px sans-serif`; ctx.fillStyle = currentColor; ctx.shadowColor = 'black'; ctx.shadowBlur = 6; ctx.fillText(d.text, d.x, d.y); ctx.shadowBlur = 0; }
@@ -600,24 +838,23 @@
         });
 
         if (isDrawing && currentPath) {
-            if (currentTool === 'draw') { ctx.strokeStyle = drawColor; ctx.lineWidth = drawSize; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(currentPath.points[0].x, currentPath.points[0].y); currentPath.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); }
-            else if (currentTool === 'circle') drawLivingCircle(ctx, currentPath.x, currentPath.y, currentPath.radius, drawColor, drawSize, false);
-            else if (currentTool === 'arrow') drawLivingArrow(ctx, currentPath.fx, currentPath.fy, currentPath.tx, currentPath.ty, drawColor, drawSize, false);
+            if (currentTool === 'draw') { ctx.strokeStyle = drawColor; ctx.lineWidth = drawSize; ctx.lineCap = 'round'; ctx.shadowColor = drawColor; ctx.shadowBlur = 5; ctx.beginPath(); ctx.moveTo(currentPath.points[0].x, currentPath.points[0].y); currentPath.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke(); ctx.shadowBlur = 0;}
+            else if (currentTool === 'circle') drawLivingCircle(ctx, currentPath.x, currentPath.y, currentPath.radius, drawColor, drawSize, true);
+            else if (currentTool === 'arrow') drawLivingArrow(ctx, currentPath.fx, currentPath.fy, currentPath.tx, currentPath.ty, drawColor, drawSize, true);
+            else if (currentTool === 'plumb') drawPlumbLine(ctx, currentPath.x, currentPath.y, currentPath.endY, drawColor, drawSize, true);
+            else if (currentTool === 'spot') drawSpotlight(ctx, currentPath.x, currentPath.y, currentPath.radius, 1);
             else if (currentTool === 'mag') drawMagnifier(ctx, currentPath.x, currentPath.y, refVid, canvas.width, canvas.height); 
         }
         if (currentTool === 'joint' && currentPath && currentPath.type === 'joint') drawJointAngle(ctx, currentPath.points, drawColor, drawSize);
 
         if (kssWatermark.complete && kssWatermark.naturalWidth > 0) {
-            ctx.save();
-            ctx.globalAlpha = 0.4;
-            const sW = canvas.width * (canvas.width < canvas.height ? 0.15 : 0.08);
-            const sH = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * sW;
+            ctx.save(); ctx.globalAlpha = 0.4;
+            const sW = canvas.width * (canvas.width < canvas.height ? 0.15 : 0.08); const sH = (kssWatermark.naturalHeight / kssWatermark.naturalWidth) * sW;
             ctx.drawImage(kssWatermark, canvas.width - sW - 15, canvas.height - sH - 15, sW, sH);
             ctx.restore();
         }
 
         if (isRecording) { renderExportFrame(recCtx, outWidth, outHeight); }
-
         requestAnimationFrame(renderLoop);
     }
 
@@ -630,62 +867,86 @@
         if (currentTool === 'pan') { isDrawing = true; startX = p.x; startY = p.y; return; }
         if (currentTool === 'timer') { drawings.push({ type: 'timer', time: rt, startTime: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); setTool('none'); return; }
         if (currentTool === 'text') { const txt = prompt("Ingresa el texto:"); if(txt) { drawings.push({ type: 'text', text: txt, time: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); } setTool('none'); return; }
+        if (currentTool === 'cross') { drawings.push({ type: 'cross', time: rt, color: drawColor, size: drawSize, x: p.x, y: p.y }); setTool('none'); return; }
         if (currentTool === 'joint') { if(!currentPath || currentPath.type !== 'joint') { currentPath = { type: 'joint', time: rt, color: drawColor, size: drawSize, points: [p] }; } else { currentPath.points.push(p); if(currentPath.points.length === 3) { drawings.push({...currentPath}); currentPath = null; } } return; }
+        
         isDrawing = true; startX = p.x; startY = p.y; 
         if(currentTool === 'draw') currentPath = { type: 'draw', time: rt, color: drawColor, size: drawSize, points: [p] }; 
         else if(currentTool === 'circle') currentPath = { type: 'circle', time: rt, color: drawColor, size: drawSize, x: startX, y: startY, radius: 0 }; 
         else if(currentTool === 'arrow') currentPath = { type: 'arrow', time: rt, color: drawColor, size: drawSize, fx: startX, fy: startY, tx: startX, ty: startY };
+        else if(currentTool === 'plumb') currentPath = { type: 'plumb', time: rt, color: drawColor, size: drawSize, x: startX, y: startY, endY: startY };
+        else if(currentTool === 'spot') currentPath = { type: 'spot', time: rt, x: startX, y: startY, radius: 0 };
         else if(currentTool === 'mag') currentPath = { type: 'mag', x: startX, y: startY }; 
     }
     
     function mDraw(e) { 
-        if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing || currentTool === 'none') return; 
-        e.preventDefault(); 
-        const p = getCoords(e); 
+        if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || currentTool === 'cross' || !isDrawing || currentTool === 'none') return; 
+        e.preventDefault(); const p = getCoords(e); 
         
         if (currentTool === 'pan') { 
             const dx = p.x - startX; const dy = p.y - startY; startX = p.x; startY = p.y; 
-            
-            // PANEO INTELIGENTE PARA LA CÁMARA
-            const isSplitCam = stage.dataset.cam === 'split';
-            const format = stage.dataset.format;
-            let pannedCam = false;
+            const isSplitCam = stage.dataset.cam === 'split'; const format = stage.dataset.format; let pannedCam = false;
 
             if (isSplitCam) {
-                if (format === 'vertical' && p.y > canvas.height / 2) {
-                    vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true;
-                } else if (format === 'horizontal' && p.x > canvas.width / 2) {
-                    vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true;
-                }
+                if (format === 'vertical' && p.y > canvas.height / 2) { vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true; } 
+                else if (format === 'horizontal' && p.x > canvas.width / 2) { vT.cam.x += dx; vT.cam.y += dy; updateVidTransform('cam'); pannedCam = true; }
             }
 
-            if (!pannedCam) {
-                getActiveVids().forEach(v => { vT[v.id].x += dx; vT[v.id].y += dy; updateVidTransform(v.id); }); 
-            }
+            if (!pannedCam) { getActiveVids().forEach(v => { vT[v.id].x += dx; vT[v.id].y += dy; updateVidTransform(v.id); }); }
             return; 
         }
 
         if(currentTool === 'draw') currentPath.points.push(p); 
         else if(currentTool === 'circle') currentPath.radius = Math.hypot(p.x - startX, p.y - startY); 
         else if(currentTool === 'arrow') { currentPath.tx = p.x; currentPath.ty = p.y; }
+        else if(currentTool === 'plumb') { currentPath.endY = p.y; }
+        else if(currentTool === 'spot') { currentPath.radius = Math.hypot(p.x - startX, p.y - startY); }
         else if(currentTool === 'mag') { currentPath.x = p.x; currentPath.y = p.y; } 
     }
     
-    function eDraw() { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || !isDrawing) return; isDrawing = false; if(currentPath && currentTool !== 'mag' && currentTool !== 'pan') { drawings.push(currentPath); } currentPath = null; }
+    function eDraw() { if(currentTool === 'joint' || currentTool === 'timer' || currentTool === 'text' || currentTool === 'cross' || !isDrawing) return; isDrawing = false; if(currentPath && currentTool !== 'mag' && currentTool !== 'pan') { drawings.push(currentPath); } currentPath = null; }
     
     canvas.addEventListener('mousedown', sDraw); canvas.addEventListener('mousemove', mDraw); window.addEventListener('mouseup', eDraw);
     canvas.addEventListener('touchstart', sDraw, {passive: false}); canvas.addEventListener('touchmove', mDraw, {passive: false}); window.addEventListener('touchend', eDraw);
 
+    window.addEventListener('keydown', e => {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if(e.code === 'Space') { e.preventDefault(); togglePlayTarget(); }
+        if(e.code === 'ArrowLeft') { e.preventDefault(); stepTarget(-1); }
+        if(e.code === 'ArrowRight') { e.preventDefault(); stepTarget(1); }
+        if(e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undoDrawing(); }
+        if(e.key.toLowerCase() === 'm') { e.preventDefault(); toggleMute(); }
+        if(e.key === '1') setQuickColor('#00e676', document.querySelectorAll('.color-dot')[0]);
+        if(e.key === '2') setQuickColor('#ef4444', document.querySelectorAll('.color-dot')[1]);
+        if(e.key === '3') setQuickColor('#0ea5e9', document.querySelectorAll('.color-dot')[2]);
+        if(e.key === '4') setQuickColor('#eab308', document.querySelectorAll('.color-dot')[3]);
+    });
+
     let tX=0, isGest=false, iT=0;
     canvas.addEventListener('touchstart', e => { if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){tX=e.touches[0].clientX; iT=(targetMode==='v2')?v2.currentTime:v1.currentTime; isGest=false;} }, {passive:false});
-    canvas.addEventListener('touchmove', e => { if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){ const dx=e.touches[0].clientX-tX; if(Math.abs(dx)>15){ isGest=true; e.preventDefault(); const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); getActiveVids().forEach(v => v.currentTime = newT); } } }, {passive:false});
+    canvas.addEventListener('touchmove', e => { 
+        if(currentTool==='none'&&e.touches.length===1 && !e.target.closest('.jog-dial-container')){ 
+            const dx=e.touches[0].clientX-tX; 
+            if(Math.abs(dx)>15){ 
+                isGest=true; e.preventDefault(); 
+                const newT = Math.max(0, iT+((dx/window.innerWidth)*60)); 
+                
+                // GESTOS TÁCTILES CON SMART SYNC
+                if (isSyncLocked && targetMode === 'sync') {
+                    v1.currentTime = newT;
+                    v2.currentTime = newT + syncOffset;
+                } else {
+                    getActiveVids().forEach(v => v.currentTime = newT); 
+                }
+            } 
+        } 
+    }, {passive:false});
 
     const ui = document.getElementById('uiOverlay'); let uiTimeout;
     const wakeUpUI = () => { ui.classList.remove('hidden-ui'); clearTimeout(uiTimeout); uiTimeout = setTimeout(() => { if(!v1.paused && !v2.paused && currentTool==='none' && !isRecording && !document.getElementById('galleryModal').classList.contains('show') && !jogActive) { ui.classList.add('hidden-ui'); } }, 3500); };
     document.addEventListener('mousemove', wakeUpUI); document.addEventListener('touchstart', wakeUpUI, {passive: true}); document.addEventListener('click', wakeUpUI); 
     
-    toggleCam();
-    resizeCanvas(); renderLoop();
+    toggleCam(); resizeCanvas(); renderLoop();
 </script>
 </body>
 </html>
