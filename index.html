@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KSS VIDEO ANALYSIS - ProCoach V15.13</title>
+    <title>KSS VIDEO ANALYSIS - ProCoach V15.14</title>
 
     <style>
         :root {
@@ -75,26 +75,24 @@
         
         .ui-element { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        /* 🔥 SOLUCIÓN PARA LA BARRA GIGANTE EN LAPTOP (AHORA EN 2 COLUMNAS) */
+        /* MODO DESKTOP: Barra Lateral de Herramientas */
         .tool-dock { 
             top: 75px; left: 15px; 
             display: grid; 
-            grid-template-columns: 40px 40px; /* Dos columnas para reducir altura a la mitad */
+            grid-template-columns: 40px 40px;
             gap: 6px; 
             padding: 6px 8px 8px 8px; 
             border-radius: 16px; z-index: 55; 
-            max-height: calc(100vh - 100px); /* Previene que se salga de la pantalla */
-            overflow-y: auto; 
-            overflow-x: hidden;
-            scrollbar-width: none; /* Oculta el scrollbar en Firefox */
+            max-height: calc(100vh - 100px);
+            overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
         }
-        .tool-dock::-webkit-scrollbar { display: none; } /* Oculta el scrollbar en Chrome/Safari */
+        .tool-dock::-webkit-scrollbar { display: none; }
         
         .tool-btn { background: transparent; border: none; color: white; width: 100%; height: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
         .tool-btn:hover { background: rgba(255,255,255,0.1); }
         .tool-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
         
-        .drag-grip { grid-column: 1 / -1; } /* La pestaña ocupa las dos columnas */
+        .drag-grip { grid-column: 1 / -1; } 
         .dock-divider { grid-column: 1 / -1; width: 90%; height: 1px; background: var(--border); margin: 2px auto; flex-shrink: 0; }
         
         .quick-colors { grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: space-around; width: 100%; margin: 2px 0; }
@@ -112,8 +110,13 @@
         .pill-btn.gallery { background: #8b5cf6; border-color: #a78bfa; }
         .pill-btn.record { background: var(--record); border-color: #f87171; }
         .pill-btn.record.recording { animation: pulseRec 1.5s infinite; }
+        
+        /* BOTÓN DE MODO DE VISTA */
+        .btn-uimode { background: #334155; border-color: #475569; }
+
         @keyframes pulseRec { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
 
+        /* Popovers en MODO DESKTOP */
         .popover-panel { position: absolute; top: 100%; right: 0; width: 280px; padding: 15px; display: none; flex-direction: column; gap: 12px; transform-origin: top right; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;}
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .popover-panel.show { display: flex; }
@@ -178,58 +181,50 @@
         .zen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
         .zen-btn.active { background: var(--accent); color: black; box-shadow: 0 0 15px var(--accent); }
 
-        /* 🔥 OVERRIDE PARA MÓVIL (Mantiene el Ribbon Horizontal) */
-        @media (max-width: 768px) {
-            .system-brand-header { display: none; } 
-            
-            .tool-dock {
-                display: flex; /* Sobrescribe el Grid por Flex en móviles */
-                top: auto;
-                bottom: 110px; 
-                left: 5px;
-                right: 5px;
-                width: auto;
-                max-height: 60px;
-                flex-direction: row;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                overflow-y: hidden;
-                padding: 5px 10px;
-                border-radius: 12px;
-                align-items: center;
-                -webkit-overflow-scrolling: touch;
-            }
-            .tool-dock::-webkit-scrollbar { display: none; }
-            .drag-grip { display: none; } 
-            .tool-btn { min-width: 40px; height: 40px; margin-right: 5px; }
-            .dock-divider { width: 1px; height: 30px; margin: 0 10px; flex-shrink: 0; }
-            .quick-colors { flex-direction: row; gap: 8px; margin: 0; flex-shrink: 0; align-items: center; }
-            .color-dot { width: 22px; height: 22px; }
-            .btn-undo, .btn-clear { width: auto; padding: 0 10px; font-size: 14px; }
-            #btn-board { width: 40px; }
-            
-            .top-pill-dock {
-                top: 10px;
-                bottom: auto;
-                left: 5px;
-                right: 5px;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                justify-content: flex-start;
-                padding: 5px;
-                background: transparent; border: none; box-shadow: none;
-                -webkit-overflow-scrolling: touch;
-            }
-            .top-pill-dock::-webkit-scrollbar { display: none; }
-            
-            .playback-dock { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-width: 100%; padding: 10px; }
-            .playback-controls { justify-content: center; }
-            .jog-dial-container { display: none; } 
-            
-            .zen-btn { bottom: 180px; right: 15px; } 
-            
-            .popover-panel { width: 90vw; right: 5vw; top: 50px; transform-origin: top center; }
+        /* 🔥 OVERRIDES PARA MODO MÓVIL (Activado por botón o automáticamente en teléfonos) */
+        body.mobile-mode .system-brand-header { display: none; } 
+        
+        body.mobile-mode .tool-dock {
+            display: flex; 
+            top: auto; bottom: 125px; left: 0; right: 0; 
+            margin: auto; width: 95vw; max-height: 60px;
+            flex-direction: row; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+            padding: 8px 10px; border-radius: 12px;
+            align-items: center; justify-content: flex-start;
+            -webkit-overflow-scrolling: touch;
         }
+        body.mobile-mode .drag-grip { display: none; } 
+        body.mobile-mode .tool-btn { width: 44px; min-width: 44px; height: 44px; margin-right: 10px; font-size: 20px;}
+        body.mobile-mode .dock-divider { width: 1px; height: 35px; margin: 0 10px; flex-shrink: 0; }
+        body.mobile-mode .quick-colors { flex-direction: row; gap: 12px; margin: 0; flex-shrink: 0; }
+        body.mobile-mode .color-dot { width: 26px; height: 26px; }
+        body.mobile-mode .btn-undo, body.mobile-mode .btn-clear { width: auto; padding: 0 12px; font-size: 16px; min-width: 0; }
+        body.mobile-mode #btn-board { width: 44px; min-width: 44px; }
+        
+        body.mobile-mode .top-pill-dock {
+            top: 10px; bottom: auto; left: 5px; right: 5px; width: auto;
+            flex-wrap: wrap; justify-content: center;
+            padding: 5px; background: transparent; border: none; box-shadow: none;
+        }
+        body.mobile-mode .pill-btn { padding: 6px 10px; font-size: 12px; }
+        
+        body.mobile-mode .playback-dock { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-width: 100%; padding: 10px; }
+        body.mobile-mode .playback-controls { justify-content: center; }
+        body.mobile-mode .jog-dial-container { display: none; } 
+        
+        body.mobile-mode .zen-btn { bottom: 200px; right: 15px; } 
+        
+        /* 🔥 POPOVERS CENTRADOS EN MODO MÓVIL */
+        body.mobile-mode .popover-panel { 
+            position: fixed; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 90vw; max-width: 400px; max-height: 80vh; 
+            border: 1px solid var(--accent); box-shadow: 0 20px 50px rgba(0,0,0,0.9); 
+            border-radius: 16px; z-index: 1000;
+        }
+        body.mobile-mode .popover-panel.show { animation: popInMobile 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes popInMobile { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
     </style>
 </head>
 <body>
@@ -288,6 +283,8 @@
 
         <div class="top-pill-dock interactive-ui draggable-panel" id="topDock" style="background: rgba(15, 23, 42, 0.4); border-radius: 20px;">
             <div class="drag-grip" style="width: 20px; height: 100%; flex-direction: column; opacity: 0.8; margin-right: 5px;"></div>
+            <button class="pill-btn btn-uimode" id="btnUiMode" onclick="toggleUIMode()">💻 Desktop UI</button>
+            
             <button class="pill-btn" onclick="togglePanel('panel-files')">📁 Archivos</button>
             <button class="pill-btn" onclick="togglePanel('panel-layout')">♊ Layout</button>
             <button class="pill-btn snapshot" onclick="takeSnapshot()">📸 Snap</button>
@@ -376,6 +373,37 @@
 </div>
 
 <script>
+    // 🔥 LÓGICA DEL MODO DE VISTA (DESKTOP/MOBILE)
+    let isMobileUI = false;
+    
+    function toggleUIMode() {
+        isMobileUI = !isMobileUI;
+        const btn = document.getElementById('btnUiMode');
+        
+        if (isMobileUI) {
+            document.body.classList.add('mobile-mode');
+            btn.innerHTML = '💻 Desktop UI';
+        } else {
+            document.body.classList.remove('mobile-mode');
+            btn.innerHTML = '📱 Mobile UI';
+        }
+        
+        // Limpiar posiciones arrastradas para que el CSS vuelva a centrar los menús
+        document.querySelectorAll('.draggable-panel').forEach(p => {
+            p.style.top = ''; p.style.left = ''; p.style.bottom = ''; p.style.right = ''; p.style.transform = '';
+        });
+        
+        // Cerrar popovers si estaban abiertos
+        togglePanel(null);
+    }
+    
+    // Auto-detectar al inicio
+    if (window.innerWidth <= 768) {
+        isMobileUI = true;
+        document.body.classList.add('mobile-mode');
+        document.getElementById('btnUiMode').innerHTML = '💻 Desktop UI';
+    }
+
     let zenMode = false;
     function toggleZenMode() {
         zenMode = !zenMode;
@@ -396,7 +424,9 @@
         elmnt.addEventListener('touchstart', dragMouseDown, {passive: false});
 
         function dragMouseDown(e) {
-            if(window.innerWidth <= 768) return; 
+            // Bloquear arrastre si estamos en Modo Móvil
+            if(document.body.classList.contains('mobile-mode')) return; 
+            
             if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel') || e.target.classList.contains('time-marker')) return;
             e.preventDefault();
             if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
@@ -633,7 +663,6 @@
 
     let capturedFrames = [];
     
-    /* 🔥 SOLUCIÓN AL ERROR DE SNAPSHOT (CORS) */
     function takeSnapshot() { 
         try {
             renderExportFrame(recCtx, outWidth, outHeight); 
@@ -687,7 +716,6 @@
 
     let isRecording = false, mediaRecorder, recordedChunks = [];
     
-    /* 🔥 SOLUCIÓN AL ERROR DE GRABACIÓN (CORS) */
     async function executeRecording() { 
         const btnMain = document.getElementById('btnRecord'); 
         const btnStart = document.getElementById('btnStartRec'); 
