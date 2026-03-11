@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KSS VIDEO ANALYSIS - ProCoach V15.11</title>
+    <title>KSS VIDEO ANALYSIS - ProCoach V15.13</title>
 
     <style>
         :root {
@@ -11,13 +11,11 @@
             --accent: #00e676; --record: #ef4444; --text: #f8fafc;
             --border: rgba(255, 255, 255, 0.1); --active-vid: #0ea5e9;
         }
-        /* FIX RESPONSIVE: Evitar recargas accidentales al deslizar (Pull-to-refresh) */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; overscroll-behavior: none; position: fixed; inset: 0; }
         
         .player-container { position: absolute; inset: 0; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Transiciones suaves para ocultar UI */
         .draggable-panel { cursor: grab; position: absolute; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, box-shadow 0.2s; }
         .draggable-panel:active { cursor: grabbing; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
         .ui-hidden { opacity: 0 !important; pointer-events: none !important; transform: scale(0.9) translateY(20px) !important; }
@@ -77,20 +75,38 @@
         
         .ui-element { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        .tool-dock { top: 75px; left: 15px; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px 8px 8px; border-radius: 16px; z-index: 55; }
-        .tool-btn { background: transparent; border: none; color: white; width: 40px; height: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
+        /* 🔥 SOLUCIÓN PARA LA BARRA GIGANTE EN LAPTOP (AHORA EN 2 COLUMNAS) */
+        .tool-dock { 
+            top: 75px; left: 15px; 
+            display: grid; 
+            grid-template-columns: 40px 40px; /* Dos columnas para reducir altura a la mitad */
+            gap: 6px; 
+            padding: 6px 8px 8px 8px; 
+            border-radius: 16px; z-index: 55; 
+            max-height: calc(100vh - 100px); /* Previene que se salga de la pantalla */
+            overflow-y: auto; 
+            overflow-x: hidden;
+            scrollbar-width: none; /* Oculta el scrollbar en Firefox */
+        }
+        .tool-dock::-webkit-scrollbar { display: none; } /* Oculta el scrollbar en Chrome/Safari */
+        
+        .tool-btn { background: transparent; border: none; color: white; width: 100%; height: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
         .tool-btn:hover { background: rgba(255,255,255,0.1); }
         .tool-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
-        .dock-divider { width: 80%; height: 1px; background: var(--border); margin: 2px auto; }
         
-        .quick-colors { display: flex; flex-direction: column; gap: 5px; align-items: center; margin: 5px 0; }
-        .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+        .drag-grip { grid-column: 1 / -1; } /* La pestaña ocupa las dos columnas */
+        .dock-divider { grid-column: 1 / -1; width: 90%; height: 1px; background: var(--border); margin: 2px auto; flex-shrink: 0; }
+        
+        .quick-colors { grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: space-around; width: 100%; margin: 2px 0; }
+        .color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
         .color-dot.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
-        .btn-clear { color: #ef4444; }
-        .btn-undo { color: #facc15; }
+        
+        .btn-undo { grid-column: 1; color: #facc15; }
+        .btn-clear { grid-column: 2; color: #ef4444; }
+        #btn-board { grid-column: 1 / -1; width: 100%; background: rgba(255,255,255,0.05); }
 
         .top-pill-dock { top: 15px; right: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; z-index: 55; padding: 5px; }
-        .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px; white-space: nowrap;}
+        .pill-btn { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;}
         .pill-btn:hover { background: rgba(255,255,255,0.1); }
         .pill-btn.snapshot { background: #3b82f6; border-color: #60a5fa; }
         .pill-btn.gallery { background: #8b5cf6; border-color: #a78bfa; }
@@ -158,32 +174,61 @@
         .flash-overlay { position: absolute; inset: 0; background: white; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
         .flash-overlay.flash { opacity: 0.8; }
         
-        /* BOTÓN ZEN (Ocultar UI) */
         .zen-btn { position: absolute; bottom: 15px; right: 15px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: var(--panel); border: 1px solid var(--border); color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; backdrop-filter: blur(10px); }
         .zen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
         .zen-btn.active { background: var(--accent); color: black; box-shadow: 0 0 15px var(--accent); }
 
-        /* 🔥 REGLAS RESPONSIVE (MÓVIL Y TABLET) */
+        /* 🔥 OVERRIDE PARA MÓVIL (Mantiene el Ribbon Horizontal) */
         @media (max-width: 768px) {
-            .system-brand-header { display: none; } /* Ocultar logo en móvil para ahorrar espacio */
+            .system-brand-header { display: none; } 
             
-            .tool-dock { top: 10px; left: 10px; flex-direction: row; flex-wrap: wrap; width: calc(100% - 70px); max-height: 110px; overflow-y: auto; padding: 5px; border-radius: 12px; }
-            .drag-grip { display: none; } /* Ocultar agarradera en móvil, los paneles se fijan */
-            .tool-btn { width: 34px; height: 34px; font-size: 16px; }
-            .dock-divider { width: 1px; height: 25px; margin: 0 4px; }
-            .quick-colors { flex-direction: row; margin: 0 5px; }
-            .color-dot { width: 18px; height: 18px; }
+            .tool-dock {
+                display: flex; /* Sobrescribe el Grid por Flex en móviles */
+                top: auto;
+                bottom: 110px; 
+                left: 5px;
+                right: 5px;
+                width: auto;
+                max-height: 60px;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 5px 10px;
+                border-radius: 12px;
+                align-items: center;
+                -webkit-overflow-scrolling: touch;
+            }
+            .tool-dock::-webkit-scrollbar { display: none; }
+            .drag-grip { display: none; } 
+            .tool-btn { min-width: 40px; height: 40px; margin-right: 5px; }
+            .dock-divider { width: 1px; height: 30px; margin: 0 10px; flex-shrink: 0; }
+            .quick-colors { flex-direction: row; gap: 8px; margin: 0; flex-shrink: 0; align-items: center; }
+            .color-dot { width: 22px; height: 22px; }
+            .btn-undo, .btn-clear { width: auto; padding: 0 10px; font-size: 14px; }
+            #btn-board { width: 40px; }
             
-            .top-pill-dock { top: auto; bottom: 80px; left: 10px; right: 10px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px; background: transparent; border: none; box-shadow: none; }
+            .top-pill-dock {
+                top: 10px;
+                bottom: auto;
+                left: 5px;
+                right: 5px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                justify-content: flex-start;
+                padding: 5px;
+                background: transparent; border: none; box-shadow: none;
+                -webkit-overflow-scrolling: touch;
+            }
             .top-pill-dock::-webkit-scrollbar { display: none; }
             
             .playback-dock { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-width: 100%; padding: 10px; }
             .playback-controls { justify-content: center; }
-            .jog-dial-container { display: none; } /* Ocultar rueda giratoria en móvil (difícil de usar en táctil) */
+            .jog-dial-container { display: none; } 
             
-            .zen-btn { bottom: 130px; right: 15px; } /* Subir botón zen sobre la barra inferior */
+            .zen-btn { bottom: 180px; right: 15px; } 
             
-            .popover-panel { width: 90vw; right: 5vw; bottom: 100%; top: auto; transform-origin: bottom center; }
+            .popover-panel { width: 90vw; right: 5vw; top: 50px; transform-origin: top center; }
         }
     </style>
 </head>
@@ -197,7 +242,7 @@
             <div class="vid-wrapper" id="wrap1"><video id="v1" playsinline></video></div>
             <div class="vid-wrapper" id="wrap2"><video id="v2" playsinline></video></div>
             <canvas id="masterCanvas"></canvas>
-            <video id="webcamVideo" class="webcam-bubble" autoplay muted playsinline></video>
+            <video id="webcamVideo" class="webcam-bubble" autoplay muted playsinline webkit-playsinline></video>
         </div>
     </div>
     <canvas id="recordCanvas"></canvas>
@@ -228,8 +273,7 @@
             <button class="tool-btn" id="btn-mag" onclick="setTool('mag')" title="Lupa Dinámica" style="color: #60a5fa;">🔎</button>
             <button class="tool-btn" id="btn-timer" onclick="setTool('timer')" title="Cronómetro" style="color: #facc15;">⏱️</button>
             <button class="tool-btn" id="btn-stamp" onclick="addMotionStamp()" title="Estroboscopio (Rastro)" style="color: #c084fc;">👤</button>
-            <div class="dock-divider"></div>
-            <button class="tool-btn" id="btn-board" onclick="toggleBoard()" title="Pizarra Táctica (Oscurecer Fondo)" style="color: #cbd5e1; background: rgba(255,255,255,0.05);">🖍️</button>
+            <button class="tool-btn" id="btn-board" onclick="toggleBoard()" title="Pizarra Táctica (Oscurecer Fondo)" style="color: #cbd5e1;">🖍️</button>
             <div class="dock-divider"></div>
             <div class="quick-colors">
                 <button class="color-dot active" style="background:#00e676;" onclick="setQuickColor('#00e676', this)"></button>
@@ -332,7 +376,6 @@
 </div>
 
 <script>
-    // SISTEMA MODO ZEN
     let zenMode = false;
     function toggleZenMode() {
         zenMode = !zenMode;
@@ -353,7 +396,7 @@
         elmnt.addEventListener('touchstart', dragMouseDown, {passive: false});
 
         function dragMouseDown(e) {
-            if(window.innerWidth <= 768) return; // Desactivar drag and drop en móviles
+            if(window.innerWidth <= 768) return; 
             if(e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('color-dot') || e.target.closest('.jog-dial-container') || e.target.closest('.popover-panel') || e.target.classList.contains('time-marker')) return;
             e.preventDefault();
             if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
@@ -496,10 +539,20 @@
 
         if (layout !== 'hidden' && !webcamStream) {
             try { 
-                webcamStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: { ideal: 1920 }, height: { ideal: 1080 } } }); 
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true, 
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: "user" } 
+                }); 
+                
+                webcam.setAttribute('playsinline', '');
+                webcam.setAttribute('autoplay', '');
+                webcam.setAttribute('muted', '');
+                
                 webcam.srcObject = webcamStream; 
                 await webcam.play().catch(e=>console.warn(e)); 
-            } catch (err) { console.error("Error activando cámara:", err); }
+            } catch (err) { 
+                console.error("Error activando cámara:", err); 
+            }
         }
         resizeCanvas();
     }
@@ -579,7 +632,25 @@
     }
 
     let capturedFrames = [];
-    function takeSnapshot() { renderExportFrame(recCtx, outWidth, outHeight); const dataURL = recCanvas.toDataURL('image/png'); capturedFrames.push({ id: Date.now(), src: dataURL, selected: false }); document.getElementById('snapCount').innerText = capturedFrames.length; const flash = document.getElementById('flashOverlay'); flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 100); }
+    
+    /* 🔥 SOLUCIÓN AL ERROR DE SNAPSHOT (CORS) */
+    function takeSnapshot() { 
+        try {
+            renderExportFrame(recCtx, outWidth, outHeight); 
+            const dataURL = recCanvas.toDataURL('image/png'); 
+            capturedFrames.push({ id: Date.now(), src: dataURL, selected: false }); 
+            document.getElementById('snapCount').innerText = capturedFrames.length; 
+            const flash = document.getElementById('flashOverlay'); flash.classList.add('flash'); 
+            setTimeout(() => flash.classList.remove('flash'), 100); 
+        } catch(err) {
+            if(err.name === 'SecurityError') {
+                alert("⚠️ BLOQUEO DE SEGURIDAD (CORS):\n\nEl navegador no te deja tomar la foto porque abriste el archivo localmente con doble clic.\n\nSOLUCIÓN: Abre la app usando un servidor local (ej. Live Server en VS Code).");
+            } else {
+                alert("Error al capturar: " + err);
+            }
+        }
+    }
+
     function openGallery() { const modal = document.getElementById('galleryModal'); const grid = document.getElementById('galleryGrid'); grid.innerHTML = ''; if(capturedFrames.length === 0) { grid.innerHTML = '<p style="color: #475569; margin:auto;">No hay frames capturados aún.</p>'; } capturedFrames.forEach((frame, index) => { const div = document.createElement('div'); div.className = `frame-card ${frame.selected ? 'selected' : ''}`; div.onclick = () => toggleSelectFrame(index); div.innerHTML = `<img src="${frame.src}" alt="Frame"><div class="check-icon">✓</div>`; grid.appendChild(div); }); renderCompareView(); modal.classList.add('show'); }
     function closeGallery() { document.getElementById('galleryModal').classList.remove('show'); }
     function toggleSelectFrame(index) { const frame = capturedFrames[index]; const selectedCount = capturedFrames.filter(f => f.selected).length; if(!frame.selected && selectedCount >= 2) { alert("Solo 2 frames permitidos."); return; } frame.selected = !frame.selected; openGallery(); }
@@ -615,8 +686,12 @@
     jogDial.addEventListener('touchstart', startJog, {passive:false}); window.addEventListener('touchmove', moveJog, {passive:false}); window.addEventListener('touchend', endJog);
 
     let isRecording = false, mediaRecorder, recordedChunks = [];
+    
+    /* 🔥 SOLUCIÓN AL ERROR DE GRABACIÓN (CORS) */
     async function executeRecording() { 
-        const btnMain = document.getElementById('btnRecord'); const btnStart = document.getElementById('btnStartRec'); 
+        const btnMain = document.getElementById('btnRecord'); 
+        const btnStart = document.getElementById('btnStartRec'); 
+        
         if (!isRecording) { 
             try { 
                 await toggleCam(); resizeCanvas(); 
@@ -633,9 +708,33 @@
                 mediaRecorder = new MediaRecorder(combinedStream, opts); recordedChunks = []; 
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); }; 
                 mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); const a = document.createElement('a'); a.style.display = 'none'; a.href = URL.createObjectURL(blob); a.download = `KSS-VideoAnalysis-${Date.now()}.webm`; document.body.appendChild(a); a.click(); }; 
-                mediaRecorder.start(); isRecording = true; btnStart.innerText = "🛑 Detener y Guardar"; btnMain.classList.add('recording'); btnMain.innerText = "🛑 Grabando"; togglePanel(null); 
-            } catch (err) { alert("Error al grabar bro: " + err); } 
-        } else { mediaRecorder.stop(); isRecording = false; btnStart.innerText = "🔴 Iniciar Grabación"; btnMain.classList.remove('recording'); btnMain.innerText = "🔴 Estudio"; togglePanel(null); } 
+                
+                mediaRecorder.start(); 
+                isRecording = true; 
+                btnStart.innerText = "🛑 Detener y Guardar"; 
+                btnMain.classList.add('recording'); 
+                btnMain.innerText = "🛑 Grabando"; 
+                togglePanel(null); 
+            } catch (err) { 
+                isRecording = false;
+                btnStart.innerText = "🔴 Iniciar Grabación";
+                btnMain.classList.remove('recording');
+                btnMain.innerText = "🔴 Estudio";
+                
+                if (err.name === 'SecurityError') {
+                    alert("⚠️ BLOQUEO DE SEGURIDAD (CORS):\n\nEl navegador no te deja grabar porque abriste el archivo con doble clic (file://).\n\nSOLUCIÓN: Sube la app a internet o usa la extensión 'Live Server' en VS Code para correrla como localhost.");
+                } else {
+                    alert("Error al grabar bro: " + err); 
+                }
+            } 
+        } else { 
+            mediaRecorder.stop(); 
+            isRecording = false; 
+            btnStart.innerText = "🔴 Iniciar Grabación"; 
+            btnMain.classList.remove('recording'); 
+            btnMain.innerText = "🔴 Estudio"; 
+            togglePanel(null); 
+        } 
     }
 
     function toggleLockSync() {
